@@ -33,7 +33,7 @@ Starts an interactive prompt:
 ```
 ┌─────────────────────────────────┐
 │                                 │
-│   ⚡ fullapi v1.0.0             │
+│   ⚡ fullapi v1.0.0              │
 │   FastAPI project scaffolder    │
 │                                 │
 └─────────────────────────────────┘

@@ -1,118 +1,63 @@
-# ⚡ fullapi
+# fullapi
 
-> FastAPI project scaffolder — zero dependencies, one command.
+A FastAPI project scaffolder that generates complete project structures with one command. Built with pure Python stdlib - no external dependencies.
 
----
+## Installation
 
-## What is fullapi?
-
-`fullapi` is a CLI tool that scaffolds a complete FastAPI project for you in seconds. No more manually creating folders, writing boilerplate, or setting up project structure from scratch. One command and you're ready to code.
-
-Inspired by tools like `cookiecutter` — simple, no magic, just works.
-
----
-
-## Install
+Install from PyPI:
 
 ```bash
 pip install fullapi
 ```
 
-That's it. No extra dependencies. Pure Python stdlib.
+Or install from source:
 
----
+```bash
+git clone https://github.com/sahilnyk/fullapi.git
+cd fullapi
+pip install -e .
+```
 
-## Usage
+## Quick Start
+
+Create a new project interactively:
 
 ```bash
 fullapi new my_project
 ```
 
-Starts an interactive prompt:
+This starts an interactive prompt where you select:
+- Mode (basic or full)
+- Database (none, sqlite, postgresql, mysql)
+- Authentication (none or JWT)
+- Docker support
 
-```
-┌─────────────────────────────────┐
-│                                 │
-│   ⚡ fullapi v1.0.0              │
-│   FastAPI project scaffolder    │
-│                                 │
-└─────────────────────────────────┘
+## Commands
 
-  [1] Mode
-      1. basic
-      2. full
-  → 2
+| Command | Description |
+|---------|-------------|
+| `fullapi new <name>` | Create new project with prompts |
+| `fullapi new <name> --basic` | Basic mode, skip prompts |
+| `fullapi new <name> --full` | Full mode, skip prompts |
+| `fullapi new <name> --full --db postgresql --auth --docker` | All features |
+| `fullapi --version` | Show version |
+| `fullapi --help` | Show help |
 
-  [2] Database
-      1. none
-      2. sqlite
-      3. postgresql
-      4. mysql
-  → 3
+## CLI Flags
 
-  [3] Auth
-      1. none
-      2. jwt
-  → 2
+| Flag | Values | Description |
+|------|--------|-------------|
+| `--basic` | - | Minimal project structure |
+| `--full` | - | Complete production structure |
+| `--db` | none, sqlite, postgresql, mysql | Database choice |
+| `--auth` | - | Add JWT authentication |
+| `--docker` | - | Add Docker files |
 
-  [4] Docker
-      1. yes
-      2. no
-  → 1
+## What Gets Created
 
-  Creating project...
+### Basic Mode
 
-  ████████████████████░░░░░░░░░░░░  60%  creating routers...
-
-  ✓  my_project/
-  ✓  my_project/main.py
-  ✓  my_project/routers/health.py
-  ✓  my_project/routers/users.py
-  ✓  my_project/models/user.py
-  ✓  my_project/schemas/user.py
-  ✓  my_project/crud/user.py
-  ✓  my_project/core/config.py
-  ✓  my_project/core/security.py
-  ✓  my_project/db/session.py
-  ✓  my_project/deps.py
-  ✓  my_project/tests/test_main.py
-  ✓  my_project/.env.example
-  ✓  my_project/requirements.txt
-  ✓  my_project/Dockerfile
-  ✓  my_project/docker-compose.yml
-
-┌──────────────────────────────────────────┐
-│                                          │
-│   ✅  my_project is ready!               │
-│                                          │
-│   cd my_project                          │
-│   pip install -r requirements.txt        │
-│   uvicorn main:app --reload              │
-│                                          │
-│   Docs → http://localhost:8000/docs      │
-│                                          │
-└──────────────────────────────────────────┘
-```
-
----
-
-## Skip prompts with flags
-
-```bash
-fullapi new my_project --basic                        # basic mode, no prompts
-fullapi new my_project --full                         # full mode, no prompts
-fullapi new my_project --full --db postgresql         # full + postgres
-fullapi new my_project --full --db postgresql --auth  # full + postgres + jwt
-fullapi new my_project --full --db postgresql --auth --docker  # everything
-```
-
----
-
-## Modes
-
-### Basic
-
-Minimal, clean starting point. Good for small APIs or learning.
+A minimal starting point for small APIs:
 
 ```
 my_project/
@@ -126,9 +71,9 @@ my_project/
 └── requirements.txt
 ```
 
-### Full
+### Full Mode
 
-Production-ready structure. Covers routing, models, schemas, CRUD, auth, DB, tests, Docker.
+Production-ready structure with all components:
 
 ```
 my_project/
@@ -142,6 +87,7 @@ my_project/
 │   └── user.py
 ├── schemas/
 │   ├── __init__.py
+│   ├── base.py
 │   └── user.py
 ├── crud/
 │   ├── __init__.py
@@ -149,160 +95,113 @@ my_project/
 ├── core/
 │   ├── __init__.py
 │   ├── config.py
-│   └── security.py         # only if --auth selected
+│   └── security.py      (if --auth)
 ├── db/
 │   ├── __init__.py
-│   └── session.py          # only if db selected
-├── deps.py
+│   └── session.py       (if --db)
 ├── tests/
 │   └── test_main.py
+├── deps.py
 ├── .env.example
 ├── requirements.txt
-├── Dockerfile              # only if --docker selected
-└── docker-compose.yml      # only if --docker selected
+├── Dockerfile           (if --docker)
+└── docker-compose.yml   (if --docker)
 ```
 
----
+## Features
 
-## Options
+- Interactive prompts for configuration
+- CLI flags for automation
+- Database support: SQLite, PostgreSQL, MySQL
+- JWT authentication with OAuth2
+- Docker and docker-compose setup
+- Progress bar during scaffolding
+- Overwrite protection for existing directories
+- Zero external dependencies
 
-| Option | Description |
-|--------|-------------|
-| `--basic` | Scaffold basic mode, skip prompts |
-| `--full` | Scaffold full mode, skip prompts |
-| `--db` | Database: `none`, `sqlite`, `postgresql`, `mysql` |
-| `--auth` | Add JWT authentication |
-| `--docker` | Add Dockerfile and docker-compose.yml |
-| `--version` | Show version |
-| `--help` | Show help |
+## Examples
 
----
+Basic API:
+```bash
+fullapi new my_api --basic
+```
+
+Full API with PostgreSQL:
+```bash
+fullapi new my_api --full --db postgresql
+```
+
+Complete setup with everything:
+```bash
+fullapi new my_api --full --db postgresql --auth --docker
+```
+
+## Running Your Project
+
+After scaffolding:
+
+```bash
+cd my_project
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
+
+Visit http://localhost:8000/docs for the auto-generated API documentation.
 
 ## Architecture
 
-```
-fullapi/
-├── pyproject.toml              # package metadata + entry point
-├── README.md
-└── fullapi/
-    ├── __init__.py
-    ├── cli.py                  # entry point, parses commands + flags
-    ├── prompt.py               # interactive prompts, returns config
-    ├── scaffold.py             # creates folders + writes files
-    ├── config.py               # ProjectConfig dataclass
-    └── templates/
-        ├── __init__.py
-        ├── main.py             # main.py template
-        ├── router.py           # router templates
-        ├── model.py            # SQLAlchemy model templates
-        ├── schema.py           # Pydantic schema templates
-        ├── crud.py             # CRUD templates
-        ├── deps.py             # dependency injection template
-        ├── config.py           # core config template
-        ├── security.py         # JWT security template
-        ├── database.py         # DB session template
-        ├── dockerfile.py       # Dockerfile template
-        ├── dockercompose.py    # docker-compose template
-        ├── env.py              # .env.example template
-        └── requirements.py     # requirements.txt template
-```
+fullapi is built entirely with Python standard library:
 
-### How it flows
+- argparse for CLI parsing
+- pathlib for file operations
+- string.Template for code generation
+- ANSI escape codes for terminal output
 
-```
-cli.py
-  │
-  ├── parse args + flags
-  │
-  └── prompt.py
-        │
-        ├── ask interactive questions (if no flags)
-        │
-        └── ProjectConfig dataclass
-              │
-              └── scaffold.py
-                    │
-                    ├── read config
-                    ├── create folders via pathlib
-                    ├── render templates via string.Template
-                    └── write files + show progress bar
-```
-
-### ProjectConfig — drives everything
-
-```python
-@dataclass
-class ProjectConfig:
-    name: str
-    mode: str        # basic | full
-    database: str    # none | sqlite | postgresql | mysql
-    auth: bool       # jwt
-    docker: bool
-```
-
-Every folder, every file, every template decision is driven purely by this config object. Clean, no spaghetti.
-
----
-
-## Zero Dependencies
-
-`fullapi` uses only Python stdlib. Nothing else.
-
-| Need | Solution |
-|------|----------|
-| CLI parsing | `argparse` |
-| Folder/file creation | `pathlib` |
-| String templating | `string.Template` |
-| Terminal colors + progress bar | ANSI escape codes + `\r` |
-| Interactive prompts | `input()` |
-
----
-
-## Error Handling
-
-**Project already exists:**
-```
-  ⚠️  Directory 'my_project' already exists.
-
-      1. Overwrite
-      2. Cancel
-  →
-```
-
-**Invalid input:**
-```
-  ✗  Invalid choice. Pick a valid option.
-```
-
-**Missing project name:**
-```
-  ✗  Usage: fullapi new <project_name>
-```
-
----
-
-## Roadmap
-
-- [x] Basic scaffolding
-- [x] Full scaffolding
-- [x] Database support (sqlite, postgresql, mysql)
-- [x] JWT auth
-- [x] Docker support
-- [x] Progress bar
-- [ ] `fullapi add router <name>` — add a new router to existing project
-- [ ] `fullapi add model <name>` — add a new model to existing project
-- [ ] Alembic migrations support
-- [ ] Redis support
-- [ ] Custom templates support
-
----
+The tool uses a simple dataclass (ProjectConfig) to drive all decisions. No complex logic or external templating engines.
 
 ## Contributing
 
-PRs welcome. Keep it stdlib only — no new dependencies.
+Contributions are welcome. Guidelines:
 
----
+1. Keep it stdlib only - no new dependencies
+2. Write clean, readable code
+3. Test your changes before submitting
+4. One feature per PR
+
+To contribute:
+
+```bash
+# Fork and clone
+git clone https://github.com/sahilnyk/fullapi.git
+cd fullapi
+
+# Make changes
+# ...
+
+# Test
+pip install -e .
+fullapi new test_project --full
+
+# Submit PR
+```
+
+## Roadmap
+
+- Basic scaffolding (done)
+- Full scaffolding with models/CRUD (done)
+- Database support (done)
+- JWT authentication (done)
+- Docker support (done)
+- Progress bar (done)
+- Add router/model to existing projects (planned)
+- Alembic migrations (planned)
+- Redis support (planned)
+- Custom templates (planned)
 
 ## License
 
-MIT
+MIT License - see LICENSE file for details.
+
+## Author
+
+Sahil Nayak - https://github.com/sahilnyk

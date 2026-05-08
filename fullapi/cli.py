@@ -26,7 +26,16 @@ def main():
     parser = argparse.ArgumentParser(
         prog="fullapi",
         description="FastAPI project scaffolder — zero dependencies, one command.",
-        add_help=False
+        add_help=False,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  fullapi new my_api                    # Interactive mode
+  fullapi new my_api --basic            # Basic mode
+  fullapi new my_api --full --db postgresql --auth --docker  # Full setup
+
+For more help: fullapi new --help
+        """
     )
     
     parser.add_argument(
@@ -42,13 +51,27 @@ def main():
         version=f"fullapi v{__version__}"
     )
     
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+    subparsers = parser.add_subparsers(dest="command", help="Available commands", description="Commands for creating FastAPI projects")
     
     # 'new' command
     new_parser = subparsers.add_parser(
         "new", 
         help="Create a new FastAPI project",
-        add_help=False
+        description="Generate a complete FastAPI project structure with optional database, auth, and Docker support",
+        add_help=False,
+        epilog="""
+Flags:
+  --basic           Minimal structure (main, router, config)
+  --full            Complete structure (models, CRUD, auth, DB)
+  --db <type>      Database: none, sqlite, postgresql, mysql
+  --auth            Add JWT authentication
+  --docker          Add Docker and docker-compose
+
+Examples:
+  fullapi new my_api --basic
+  fullapi new my_api --full --db postgresql
+  fullapi new my_api --full --db postgresql --auth --docker
+        """
     )
     new_parser.add_argument("-h", "--help", action="help", help="Show help for new command")
     new_parser.add_argument("project_name", nargs="?", help="Name of the project")

@@ -2,6 +2,7 @@
 
 import shutil
 import sys
+import time
 from pathlib import Path
 from string import Template
 
@@ -71,24 +72,25 @@ def scaffold_project(config: ProjectConfig) -> None:
 
 
 def _show_progress(current: int, total: int, filename: str):
-    """Show progress bar with file name."""
+    """Render progress bar with file name."""
     width = 20
     progress = int((current / total) * width)
     
-    # Colored progress bar
     filled = color("█" * progress, Style.GREEN)
     empty = color("░" * (width - progress), Style.DIM)
     bar = filled + empty
     
     percent = int((current / total) * 100)
     
-    # Clear line (ANSI escape code) and show progress
     clear = "\033[K"  # Clear to end of line
     line = f"  {bar} {color(str(percent) + '%', Style.CYAN)} {muted(filename)}"
     
     print(f"\r{clear}{line}", end="", flush=True)
+    
     if current == total:
         print()
+    else:
+        time.sleep(0.05)
 
 
 def _collect_basic(files: list, template_vars: dict):

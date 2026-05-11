@@ -197,6 +197,8 @@ fullapi new test_project --full
 - Alembic migrations (planned)
 - Redis support (planned)
 - Custom templates (planned)
+- Middleware support (planned)
+- Logging support (planned)
 
 ## License
 

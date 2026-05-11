@@ -11,13 +11,87 @@ from fullapi.colors import (
     ICON_CHECK, ICON_CROSS, ICON_WARNING, ICON_BOLT,
     success, error, warning, info, muted, bold, color, Style
 )
-from fullapi.templates import main_basic, router, schema, config as config_templates, requirements
+from fullapi.templates import main_basic, router, schema, config as config_templates, requirements, alembic, redis, middleware, logging as logging_templates
+from fullapi.custom_templates import load_custom_template, CustomTemplateManager
 from fullapi.prompt import show_loading_animation
+
+
+def _get_database_url(db_type: str) -> str:
+    """Get database URL for Alembic configuration."""
+    if db_type == "sqlite":
+        return "sqlite:///./app.db"
+    elif db_type == "postgresql":
+        return "postgresql://user:password@localhost:5432/app"
+    elif db_type == "mysql":
+        return "mysql+pymysql://root:password@localhost:3306/app"
+    else:
+        return "sqlite:///./app.db"
+
+
+def _scaffold_with_custom_template(config: ProjectConfig, project_path: Path) -> None:
+    """Scaffold project using custom templates."""
+    custom_template = load_custom_template(config.template)
+    if not custom_template:
+        error_msg = error('Failed to load custom templates')
+        print(f"  {ICON_CROSS}  {error_msg}")
+        return
+    
+    if not custom_template.validate_template_structure():
+        return
+    
+    print()
+    info_msg = info(config.template)
+    print(f"  {bold('Using custom templates from:')} {info_msg}")
+    print()
+    
+    # Get all template files
+    template_files = custom_template.get_template_files()
+    template_vars = {"project_name": config.name}
+    
+    # Create project directory
+    project_path.mkdir()
+    
+    # Show loading animation
+    show_loading_animation("Initializing custom template project", 0.8)
+    
+    # Create all files with progress
+    total = len(template_files)
+    
+    for i, (relative_path, content) in enumerate(template_files.items(), 1):
+        # Apply template substitution for .py files
+        if relative_path.endswith('.py'):
+            content = Template(content).substitute(template_vars)
+        
+        full_path = project_path / relative_path
+        full_path.parent.mkdir(parents=True, exist_ok=True)
+        full_path.write_text(content)
+        _show_progress(i, total, relative_path)
+    
+    print()
+    show_loading_animation("Finalizing custom template project", 0.5)
+    
+    success_msg = success('Project created successfully!')
+    print(f"  {ICON_CHECK}  {success_msg}")
+    print()
+    print(f"  {bold('Next steps:')}")
+    print(f"    {color('cd', Style.CYAN)} {config.name}")
+    print(f"    {color('pip install -r', Style.CYAN)} requirements.txt")
+    print(f"    {color('uvicorn', Style.CYAN)} main:app --reload")
+    print()
+    docs_msg = muted('Docs: http://localhost:8000/docs')
+    print(f"  {docs_msg}")
+    print()
 
 
 def scaffold_project(config: ProjectConfig) -> None:
     """Create the project structure based on config."""
     project_path = Path(config.name)
+    
+    # Handle custom templates
+    if config.template:
+        return _scaffold_with_custom_template(config, project_path)
+    
+    # Continue with built-in templates
     
     # Check if directory exists
     if project_path.exists():
@@ -120,7 +194,7 @@ def _collect_full(files: list, config: ProjectConfig, template_vars: dict):
     files.append(("tests/test_main.py", "# TODO: Add tests\n"))
     
     if config.database != "none":
-        from fullapi.templates import model, crud, database, deps
+        from fullapi.templates import model, crud, database, deps, alembic
         
         files.append(("routers/users.py", router.USERS_ROUTER))
         files.append(("schemas/user.py", schema.USER_SCHEMA))
@@ -132,10 +206,44 @@ def _collect_full(files: list, config: ProjectConfig, template_vars: dict):
         files.append(("db/session.py", Template(database.DB_SESSION).substitute({"db_type": config.database})))
         deps_content = deps.DEPS_WITH_AUTH if config.auth else deps.DEPS_NO_AUTH
         files.append(("deps.py", deps_content))
+        
+        # Add Alembic migration support
+        db_url = _get_database_url(config.database)
+        files.append(("alembic.ini", Template(alembic.ALEMBIC_INI).substitute({"database_url": db_url})))
+        files.append(("alembic/env.py", alembic.ENV_PY))
+        files.append(("alembic/script.py.mako", alembic.SCRIPT_PY_MAKO))
+        files.append(("alembic/versions/__init__.py", ""))
+        
+        # Add initial migration
+        import datetime
+        create_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        initial_migration = Template(alembic.INITIAL_MIGRATION).substitute({"create_date": create_date})
+        files.append(("alembic/versions/001_initial_migration.py", initial_migration))
     
     if config.auth:
         from fullapi.templates import security
         files.append(("core/security.py", security.SECURITY))
+    
+    if config.redis:
+        files.append(("core/redis_config.py", redis.REDIS_CONFIG))
+        files.append(("core/redis_utils.py", redis.REDIS_UTILS))
+        files.append(("routers/redis.py", redis.REDIS_ROUTER))
+        files.append(("deps_redis.py", redis.REDIS_DEPS))
+    
+    if config.middleware:
+        files.append(("core/middleware_config.py", middleware.MIDDLEWARE_CONFIG))
+        files.append(("core/middleware_cors.py", middleware.MIDDLEWARE_CORS))
+        files.append(("core/middleware_rate_limit.py", middleware.MIDDLEWARE_RATE_LIMIT))
+        files.append(("core/middleware_security.py", middleware.MIDDLEWARE_SECURITY))
+        files.append(("core/middleware_gzip.py", middleware.MIDDLEWARE_GZIP))
+        files.append(("core/middleware_logging.py", middleware.MIDDLEWARE_LOGGING))
+        files.append(("core/middleware_trusted_proxy.py", middleware.MIDDLEWARE_TRUSTED_PROXY))
+        files.append(("core/middleware_setup.py", middleware.MIDDLEWARE_SETUP))
+        files.append(("main_with_middleware.py", middleware.MIDDLEWARE_MAIN))
+    
+    if config.logging:
+        files.append(("core/logging_config.py", logging_templates.LOGGING_CONFIG))
+        files.append(("core/logging_setup.py", logging_templates.LOGGING_SETUP))
     
     req_content = requirements.FULL
     if config.database == "postgresql":
@@ -144,6 +252,14 @@ def _collect_full(files: list, config: ProjectConfig, template_vars: dict):
         req_content += requirements.FULL_MYSQL
     if config.auth:
         req_content += requirements.FULL_AUTH
+    if config.database != "none":
+        req_content += alembic.REQUIREMENTS_ALEMBIC
+    if config.redis:
+        req_content += redis.REQUIREMENTS_REDIS
+    if config.middleware:
+        req_content += middleware.REQUIREMENTS_MIDDLEWARE
+    if config.logging:
+        req_content += logging_templates.REQUIREMENTS_LOGGING
     files.append(("requirements.txt", req_content))
     
     from fullapi.templates import env

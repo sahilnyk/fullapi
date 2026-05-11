@@ -59,13 +59,40 @@ def prompt_config(project_name: str) -> ProjectConfig:
          "Add Docker files"]
     )
     docker = docker == 1
+    print()
+    
+    redis = _prompt_choice(
+        "Redis Caching",
+        ["Skip Redis",
+         "Add Redis caching"]
+    )
+    redis = redis == 1
+    print()
+    
+    middleware = _prompt_choice(
+        "Middleware",
+        ["Skip Middleware",
+         "Add Middleware"]
+    )
+    middleware = middleware == 1
+    print()
+    
+    logging = _prompt_choice(
+        "Logging",
+        ["Skip Logging",
+         "Add Logging"]
+    )
+    logging = logging == 1
     
     return ProjectConfig(
         name=project_name,
         mode=mode,
         database=database,
         auth=auth,
-        docker=docker
+        docker=docker,
+        redis=redis,
+        middleware=middleware,
+        logging=logging
     )
 
 

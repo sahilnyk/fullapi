@@ -12,3 +12,7 @@ class ProjectConfig:
     database: str = "none"  # none | sqlite | postgresql | mysql
     auth: bool = False
     docker: bool = False
+    redis: bool = False
+    middleware: bool = False
+    logging: bool = False
+    template: str = None  # Path to custom template directory

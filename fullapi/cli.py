@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+from pathlib import Path
 
 from fullapi import __version__
 from fullapi.colors import (
@@ -11,6 +12,7 @@ from fullapi.colors import (
 from fullapi.config import ProjectConfig
 from fullapi.prompt import prompt_config
 from fullapi.scaffold import scaffold_project
+from fullapi.add_component import add_component_to_project
 
 
 def print_banner():
@@ -33,8 +35,10 @@ Examples:
   fullapi new my_api                    # Interactive mode
   fullapi new my_api --basic            # Basic mode
   fullapi new my_api --full --db postgresql --auth --docker  # Full setup
+  fullapi add router User               # Add User router to existing project
+  fullapi add model Product             # Add Product model to existing project
 
-For more help: fullapi new --help
+For more help: fullapi new --help or fullapi add --help
         """
     )
     
@@ -66,11 +70,16 @@ Flags:
   --db <type>      Database: none, sqlite, postgresql, mysql
   --auth            Add JWT authentication
   --docker          Add Docker and docker-compose
+  --redis           Add Redis caching support
+  --middleware       Add middleware support
+  --logging         Add logging support
+  --template <path> Custom template directory
 
 Examples:
   fullapi new my_api --basic
   fullapi new my_api --full --db postgresql
-  fullapi new my_api --full --db postgresql --auth --docker
+  fullapi new my_api --full --db postgresql --auth --docker --redis --middleware --logging
+  fullapi new my_api --template /path/to/custom/templates
         """
     )
     new_parser.add_argument("-h", "--help", action="help", help="Show help for new command")
@@ -81,6 +90,30 @@ Examples:
                            help="Database: none, sqlite, postgresql, mysql")
     new_parser.add_argument("--auth", action="store_true", help="Add JWT authentication")
     new_parser.add_argument("--docker", action="store_true", help="Add Docker support")
+    new_parser.add_argument("--redis", action="store_true", help="Add Redis caching support")
+    new_parser.add_argument("--template", type=str, help="Path to custom template directory")
+    new_parser.add_argument("--middleware", action="store_true", help="Add middleware support")
+    new_parser.add_argument("--logging", action="store_true", help="Add logging support")
+    
+    # 'add' command
+    add_parser = subparsers.add_parser(
+        "add",
+        help="Add components to existing project",
+        description="Add routers, models, and other components to an existing fullapi project",
+        add_help=False,
+        epilog="""
+Components:
+  router <name>    Add a new router with CRUD operations
+  model <name>     Add a new model with schema
+
+Examples:
+  fullapi add router User
+  fullapi add model Product
+        """
+    )
+    add_parser.add_argument("-h", "--help", action="help", help="Show help for add command")
+    add_parser.add_argument("component_type", choices=["router", "model"], help="Type of component to add")
+    add_parser.add_argument("component_name", help="Name of the component")
     
     args = parser.parse_args()
     
@@ -92,6 +125,9 @@ Examples:
     if args.command == "new":
         print_banner()
         handle_new(args)
+    elif args.command == "add":
+        print_banner()
+        handle_add(args)
 
 
 def handle_new(args):
@@ -116,7 +152,11 @@ def handle_new(args):
             mode="full" if args.full else "basic",
             database=args.db or "none",
             auth=args.auth,
-            docker=args.docker
+            docker=args.docker,
+            redis=args.redis,
+            middleware=args.middleware,
+            logging=args.logging,
+            template=args.template
         )
     else:
         # Interactive prompt mode
@@ -124,6 +164,22 @@ def handle_new(args):
     
     # Scaffold the project
     scaffold_project(config)
+
+
+def handle_add(args):
+    """Handle the 'add' command."""
+    # Check if we're in a valid project directory
+    if not Path("main.py").exists():
+        print(f"  {ICON_CROSS}  {error('Not in a valid fullapi project directory')}")
+        print()
+        print(f"  {info('Requirements:')}")
+        print(f"    • main.py file must exist")
+        print(f"    • Run from project root directory")
+        print()
+        sys.exit(1)
+    
+    # Add the component
+    add_component_to_project(args.component_type, args.component_name)
 
 
 if __name__ == "__main__":

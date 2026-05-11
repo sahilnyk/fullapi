@@ -12,6 +12,7 @@ from fullapi.colors import (
     success, error, warning, info, muted, bold, color, Style
 )
 from fullapi.templates import main_basic, router, schema, config as config_templates, requirements
+from fullapi.prompt import show_loading_animation
 
 
 def scaffold_project(config: ProjectConfig) -> None:
@@ -49,10 +50,13 @@ def scaffold_project(config: ProjectConfig) -> None:
     project_path.mkdir()
     
     print()
-    print(f"  {muted('Creating project...')}")
+    
+    # Show loading animation before starting
+    show_loading_animation("Initializing project structure", 0.8)
     
     # Create all files with progress
     total = len(files_to_create)
+    
     for i, (relative_path, content) in enumerate(files_to_create, 1):
         full_path = project_path / relative_path
         full_path.parent.mkdir(parents=True, exist_ok=True)
@@ -60,6 +64,8 @@ def scaffold_project(config: ProjectConfig) -> None:
         _show_progress(i, total, relative_path)
     
     print()
+    show_loading_animation("Finalizing project setup", 0.5)
+    
     print(f"  {ICON_CHECK}  {success('Project created successfully!')}")
     print()
     print(f"  {bold('Next steps:')}")

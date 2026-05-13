@@ -1,0 +1,17 @@
+fastapi
+uvicorn
+pydantic
+pydantic[email]
+pydantic-settings
+sqlalchemy
+fastapi
+uvicorn
+pydantic
+pydantic[email]
+pydantic-settings
+sqlalchemy
+
+pymysql
+
+# Database migrations
+alembic>=1.12.0

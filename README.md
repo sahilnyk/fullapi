@@ -52,6 +52,10 @@ This starts an interactive prompt where you select:
 | `--db` | none, sqlite, postgresql, mysql | Database choice |
 | `--auth` | - | Add JWT authentication |
 | `--docker` | - | Add Docker files |
+| `--redis` | - | Add Redis caching support |
+| `--middleware` | - | Add middleware (CORS, rate limiting, security) |
+| `--logging` | - | Add structured logging configuration |
+| `--template` | path | Use custom template directory |
 
 ## What Gets Created
 
@@ -115,6 +119,12 @@ my_project/
 - Database support: SQLite, PostgreSQL, MySQL
 - JWT authentication with OAuth2
 - Docker and docker-compose setup
+- Alembic database migrations
+- Redis caching with connection pooling
+- Middleware: CORS, rate limiting, security headers, Gzip
+- Structured logging with multiple handlers
+- Custom template support
+- Add routers and models to existing projects
 - Progress bar during scaffolding
 - Overwrite protection for existing directories
 - Zero external dependencies
@@ -131,9 +141,16 @@ Full API with PostgreSQL:
 fullapi new my_api --full --db postgresql
 ```
 
-Complete setup with everything:
+Complete setup with all features:
 ```bash
-fullapi new my_api --full --db postgresql --auth --docker
+fullapi new my_api --full --db postgresql --auth --docker --redis --middleware --logging
+```
+
+Add components to existing project:
+```bash
+cd my_project
+fullapi add router Product
+fullapi add model Order
 ```
 
 ## Running Your Project
@@ -193,12 +210,12 @@ fullapi new test_project --full
 - JWT authentication (done)
 - Docker support (done)
 - Progress bar (done)
-- Add router/model to existing projects (planned)
-- Alembic migrations (planned)
-- Redis support (planned)
-- Custom templates (planned)
-- Middleware support (planned)
-- Logging support (planned)
+- Add router/model to existing projects (done)
+- Alembic migrations (done)
+- Redis support (done)
+- Custom templates (done)
+- Middleware support (done)
+- Logging support (done)
 
 ## License
 

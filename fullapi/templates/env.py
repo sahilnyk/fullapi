@@ -55,6 +55,21 @@ REQUEST_LOGGING_EXCLUDE_PATHS=/health,/metrics
 # Trusted Proxy Configuration
 TRUSTED_PROXY_HEADERS=X-Forwarded-For,X-Forwarded-Proto,X-Forwarded-Host
 
+# Logging Configuration
+LOG_LEVEL=INFO
+LOG_FORMAT=%(asctime)s - %(name)s - %(levelname)s - %(message)s
+LOG_DATE_FORMAT=%Y-%m-%d %H:%M:%S
+LOG_FILE_PATH=app.log
+LOG_MAX_BYTES=10485760
+LOG_BACKUP_COUNT=5
+LOG_ROTATION=daily
+CONSOLE_LOG_LEVEL=INFO
+CONSOLE_COLORS_ENABLED=true
+FILE_LOG_LEVEL=DEBUG
+JSON_LOG_ENABLED=false
+STRUCTURED_LOGGING_ENABLED=false
+ERROR_LOG_ENABLED=true
+
 # JWT
 SECRET_KEY=your-super-secret-key-change-in-production
 ALGORITHM=HS256

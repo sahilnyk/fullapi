@@ -351,3 +351,7 @@ def get_log_config() -> LoggingConfig:
     """Get logging configuration from environment."""
     return LoggingConfig()
 '''
+
+
+REQUIREMENTS_LOGGING = """
+"""

@@ -62,6 +62,7 @@ class MiddlewareConfig:
         if origins:
             return [origin.strip() for origin in origins.split(",")]
         return ["http://localhost:3000", "http://localhost:8000"]
+'''
 
 
 MIDDLEWARE_CORS = '''"""CORS middleware configuration."""
@@ -79,6 +80,7 @@ def create_cors_middleware(config: MiddlewareConfig):
         allow_headers=config.cors_allow_headers,
         expose_headers=config.cors_expose_headers,
     )
+'''
 
 
 MIDDLEWARE_RATE_LIMIT = '''"""Rate limiting middleware."""
@@ -120,7 +122,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         
         if len(recent_requests) >= self.requests:
             error_content = "Rate limit exceeded"
-return JSONResponse(
+            return JSONResponse(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 content={
                     "error": error_content,
@@ -156,6 +158,7 @@ return JSONResponse(
             return real_ip
         
         return request.client.host
+'''
 
 
 MIDDLEWARE_SECURITY = '''"""Security headers middleware."""
@@ -183,8 +186,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Add security headers
         for header, value in self.config.security_headers.items():
             response.headers[header] = value
-        
+
         return response
+'''
 
 
 MIDDLEWARE_GZIP = '''"""Gzip compression middleware."""
@@ -197,10 +201,11 @@ from core.middleware_config import MiddlewareConfig
 def create_gzip_middleware(config: Optional[MiddlewareConfig] = None):
     """Create Gzip middleware with configuration."""
     middleware_config = config or MiddlewareConfig()
-    
+
     return GZipMiddleware(
         minimum_size=middleware_config.gzip_minimum_size,
     )
+'''
 
 
 MIDDLEWARE_LOGGING = '''"""Request logging middleware."""
@@ -255,8 +260,9 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         }
         
         self.logger.info(json.dumps(log_data))
-        
+
         return response
+'''
 
 
 MIDDLEWARE_TRUSTED_PROXY = '''"""Trusted proxy middleware."""
@@ -289,8 +295,9 @@ class TrustedProxyMiddleware(BaseHTTPMiddleware):
                     request.state.forwarded_proto = request.headers[header]
                 elif header == "X-Forwarded-Host":
                     request.state.forwarded_host = request.headers[header]
-        
+
         return await call_next(request)
+'''
 
 
 MIDDLEWARE_SETUP = '''"""Middleware setup and configuration."""
@@ -470,4 +477,4 @@ REQUEST_LOGGING_EXCLUDE_PATHS=/health,/metrics
 
 # Trusted Proxy Configuration
 TRUSTED_PROXY_HEADERS=X-Forwarded-For,X-Forwarded-Proto,X-Forwarded-Host
-'''
+"""

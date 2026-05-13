@@ -1,8 +1,10 @@
 from fastapi import FastAPI
+from routers import product
 from routers.health import router as health_router
 
 app = FastAPI(title="complete_app")
 
+app.include_router(product.router, prefix="/product", tags=["product"])
 app.include_router(health_router, tags=["health"])
 
 if __name__ == "__main__":

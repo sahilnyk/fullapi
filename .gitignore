@@ -35,6 +35,10 @@ ENV/
 .pytest_cache/
 .coverage
 htmlcov/
+test_*/
+tests/test_*/
+tests/*_api/
+tests/*_test/
 
 # Build artifacts
 *.egg-info/

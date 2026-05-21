@@ -73,13 +73,13 @@ OPTIONS:
 
 ## Features
 
-✨ **Zero Dependencies** — Pure Python stdlib  
-⚡ **Instant Setup** — Complete project in seconds  
-🎯 **Production Ready** — Auth, Docker, DB migrations, caching  
-🔧 **Extensible** — Add routers/models to existing projects  
-🩺 **Health Checks** — `fullapi doctor` validates structure  
-📦 **Presets** — Save common configurations  
-🎨 **Custom Templates** — Bring your own boilerplate  
+**Zero Dependencies** — Pure Python stdlib  
+**Instant Setup** — Complete project in seconds  
+**Production Ready** — Auth, Docker, DB migrations, caching  
+**Extensible** — Add routers/models to existing projects  
+**Health Checks** — `fullapi doctor` validates structure  
+**Presets** — Save common configurations  
+**Custom Templates** — Bring your own boilerplate  
 
 ## What Gets Created
 

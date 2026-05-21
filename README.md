@@ -1,8 +1,6 @@
 <div align="center">
 
-<img src="logo.svg" alt="fullapi" width="200"/>
-
-# fullapi
+# 🕊️ fullapi
 
 **FastAPI project scaffolder — one command, full stack**
 
@@ -11,11 +9,7 @@
 [![License](https://img.shields.io/github/license/sahilnyk/fullapi?color=009688)](LICENSE)
 [![Downloads](https://img.shields.io/pypi/dm/fullapi?color=009688)](https://pypi.org/project/fullapi/)
 
-[Quick Start](#quick-start) · [Commands](#commands) · [Presets](#presets) · [Features](#features)
-
 </div>
-
----
 
 ## Quick Start
 
@@ -27,8 +21,6 @@ uvicorn main:app --reload
 ```
 
 Visit `http://localhost:8000/docs` for auto-generated API documentation.
-
----
 
 ## Commands
 
@@ -50,8 +42,6 @@ fullapi doctor
 fullapi preset list
 ```
 
----
-
 ## Presets
 
 | Preset | Description |
@@ -62,8 +52,6 @@ fullapi preset list
 | `minimal` | Bare essentials, nothing else |
 
 Create custom presets in `~/.fullapi/presets.json`
-
----
 
 ## CLI Flags
 
@@ -83,8 +71,6 @@ OPTIONS:
   --preset NAME        Use a preset configuration
 ```
 
----
-
 ## Features
 
 ✨ **Zero Dependencies** — Pure Python stdlib  
@@ -94,8 +80,6 @@ OPTIONS:
 🩺 **Health Checks** — `fullapi doctor` validates structure  
 📦 **Presets** — Save common configurations  
 🎨 **Custom Templates** — Bring your own boilerplate  
-
----
 
 ## What Gets Created
 
@@ -135,8 +119,6 @@ my_project/
 └── .fullapi.json
 ```
 
----
-
 ## Examples
 
 ```bash
@@ -153,15 +135,11 @@ fullapi new api --basic
 fullapi new api --template ./my_template
 ```
 
----
-
 ## Contributing
 
 1. Keep it stdlib only — no new dependencies
 2. Test your changes: `pip install -e . && fullapi new test_project --full`
 3. One feature per PR
-
----
 
 ## License
 

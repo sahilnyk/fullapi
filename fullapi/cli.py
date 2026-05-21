@@ -266,7 +266,14 @@ def handle_preset(args):
         for key, value in preset.items():
             if key == "description":
                 continue
-            label = color(str(value), Style.GREEN) if value and value is not True else (color(str(value), Style.CYAN) if value else muted(str(value)))
+            if value is True:
+                label = color("yes", Style.GREEN)
+            elif value is False:
+                label = muted("no")
+            elif value:
+                label = color(str(value), Style.CYAN)
+            else:
+                label = muted("none")
             print(f"    {key}: {label}")
         print()
 

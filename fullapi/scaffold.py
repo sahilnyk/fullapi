@@ -189,9 +189,33 @@ def _collect_basic(files: list, template_vars: dict):
     files.append(("requirements.txt", requirements.BASIC))
 
 
+def _build_full_main(config: ProjectConfig, template_vars: dict) -> str:
+    """Build main.py content for full mode with proper imports."""
+    imports = ["from fastapi import FastAPI"]
+    imports.append("from routers.health import router as health_router")
+
+    routers = ['app.include_router(health_router, tags=["health"])']
+
+    if config.database != "none":
+        imports.append("from routers.users import router as users_router")
+        routers.append('app.include_router(users_router, prefix="/users", tags=["users"])')
+
+    if config.redis:
+        imports.append("from routers.redis import router as redis_router")
+        routers.append('app.include_router(redis_router, prefix="/redis", tags=["redis"])')
+
+    name = template_vars["project_name"]
+    lines = imports + ["", f'app = FastAPI(title="{name}")', ""] + routers
+    lines += ["", "", 'if __name__ == "__main__":',
+              "    import uvicorn",
+              '    uvicorn.run(app, host="0.0.0.0", port=8000)',
+              ""]
+    return "\n".join(lines)
+
+
 def _collect_full(files: list, config: ProjectConfig, template_vars: dict):
     """Collect files for full mode."""
-    files.append(("main.py", Template(main_basic.TEMPLATE).substitute(template_vars)))
+    files.append(("main.py", _build_full_main(config, template_vars)))
     files.append(("routers/__init__.py", ""))
     files.append(("routers/health.py", router.HEALTH_ROUTER))
     files.append(("schemas/__init__.py", ""))

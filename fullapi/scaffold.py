@@ -13,6 +13,7 @@ from fullapi.colors import (
 )
 from fullapi.templates import main_basic, router, schema, config as config_templates, requirements, alembic, redis, middleware, logging as logging_templates
 from fullapi.custom_templates import load_custom_template, CustomTemplateManager
+from fullapi.metadata import write_metadata
 from fullapi.prompt import show_loading_animation
 
 
@@ -67,9 +68,12 @@ def _scaffold_with_custom_template(config: ProjectConfig, project_path: Path) ->
         full_path.write_text(content)
         _show_progress(i, total, relative_path)
     
+    # Write project metadata
+    write_metadata(project_path, config)
+
     print()
     show_loading_animation("Finalizing custom template project", 0.5)
-    
+
     success_msg = success('Project created successfully!')
     print(f"  {ICON_CHECK}  {success_msg}")
     print()
@@ -137,9 +141,12 @@ def scaffold_project(config: ProjectConfig) -> None:
         full_path.write_text(content)
         _show_progress(i, total, relative_path)
     
+    # Write project metadata
+    write_metadata(project_path, config)
+
     print()
     show_loading_animation("Finalizing project setup", 0.5)
-    
+
     print(f"  {ICON_CHECK}  {success('Project created successfully!')}")
     print()
     print(f"  {bold('Next steps:')}")

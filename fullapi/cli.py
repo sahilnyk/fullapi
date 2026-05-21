@@ -6,13 +6,15 @@ from pathlib import Path
 
 from fullapi import __version__
 from fullapi.colors import (
-    ICON_ARROW, ICON_BOLT, ICON_CROSS, 
+    ICON_ARROW, ICON_BOLT, ICON_CROSS,
     error, info, muted, success, bold, color, Style
 )
 from fullapi.config import ProjectConfig
 from fullapi.prompt import prompt_config
 from fullapi.scaffold import scaffold_project
 from fullapi.add_component import add_component_to_project
+from fullapi.doctor import run_doctor
+from fullapi.presets import get_preset, apply_preset, list_presets
 
 
 def print_banner():
@@ -94,6 +96,7 @@ Examples:
     new_parser.add_argument("--template", type=str, help="Path to custom template directory")
     new_parser.add_argument("--middleware", action="store_true", help="Add middleware support")
     new_parser.add_argument("--logging", action="store_true", help="Add logging support")
+    new_parser.add_argument("--preset", type=str, help="Use a named preset (e.g. production, microservice)")
     
     # 'add' command
     add_parser = subparsers.add_parser(
@@ -114,6 +117,31 @@ Examples:
     add_parser.add_argument("-h", "--help", action="help", help="Show help for add command")
     add_parser.add_argument("component_type", choices=["router", "model"], help="Type of component to add")
     add_parser.add_argument("component_name", help="Name of the component")
+
+    # 'doctor' command
+    subparsers.add_parser(
+        "doctor",
+        help="Check project health",
+        description="Validate project structure and detect issues",
+        add_help=False,
+    )
+
+    # 'preset' command
+    preset_parser = subparsers.add_parser(
+        "preset",
+        help="Manage and list presets",
+        description="List available presets or show preset details",
+        add_help=False,
+        epilog="""
+Examples:
+  fullapi preset list                  # List all presets
+  fullapi preset show production       # Show preset details
+  fullapi new my_api --preset production  # Use a preset
+        """
+    )
+    preset_parser.add_argument("-h", "--help", action="help", help="Show help for preset command")
+    preset_parser.add_argument("action", choices=["list", "show"], help="Action: list or show")
+    preset_parser.add_argument("preset_name", nargs="?", help="Preset name (for show)")
     
     args = parser.parse_args()
     
@@ -128,6 +156,12 @@ Examples:
     elif args.command == "add":
         print_banner()
         handle_add(args)
+    elif args.command == "doctor":
+        print_banner()
+        handle_doctor()
+    elif args.command == "preset":
+        print_banner()
+        handle_preset(args)
 
 
 def handle_new(args):
@@ -144,8 +178,21 @@ def handle_new(args):
         print()
         sys.exit(1)
     
-    # Build config from flags or prompts
-    if args.basic or args.full:
+    # Build config from preset, flags, or prompts
+    if args.preset:
+        preset = get_preset(args.preset)
+        if not preset:
+            print(f"  {ICON_CROSS}  {error(f'Unknown preset: {args.preset}')}")
+            print()
+            print(f"  {info('Available presets:')}")
+            for name, p in list_presets().items():
+                print(f"    {bold(name)} {muted('—')} {muted(p.get('description', ''))}")
+            print()
+            sys.exit(1)
+        config = apply_preset(args.project_name, preset)
+        print(f"  {info('Using preset:')} {bold(args.preset)}")
+        print()
+    elif args.basic or args.full:
         # CLI flags mode
         config = ProjectConfig(
             name=args.project_name,
@@ -161,7 +208,7 @@ def handle_new(args):
     else:
         # Interactive prompt mode
         config = prompt_config(args.project_name)
-    
+
     # Scaffold the project
     scaffold_project(config)
 
@@ -180,6 +227,48 @@ def handle_add(args):
     
     # Add the component
     add_component_to_project(args.component_type, args.component_name)
+
+
+def handle_doctor():
+    """Handle the 'doctor' command."""
+    if not Path("main.py").exists():
+        print(f"  {ICON_CROSS}  {error('Not in a valid fullapi project directory')}")
+        print()
+        sys.exit(1)
+    run_doctor()
+
+
+def handle_preset(args):
+    """Handle the 'preset' command."""
+    presets = list_presets()
+
+    if args.action == "list":
+        print(f"  {bold('Available Presets')}")
+        print()
+        for name, preset in presets.items():
+            desc = preset.get("description", "")
+            print(f"    {color(name, Style.CYAN)}  {muted(desc)}")
+        print()
+        print(f"  {muted('Usage:')} fullapi new my_api --preset <name>")
+        print(f"  {muted('Custom:')} ~/.fullapi/presets.json")
+        print()
+
+    elif args.action == "show":
+        if not args.preset_name:
+            print(f"  {ICON_CROSS}  {error('Specify a preset name: fullapi preset show <name>')}")
+            sys.exit(1)
+        preset = presets.get(args.preset_name)
+        if not preset:
+            print(f"  {ICON_CROSS}  {error(f'Unknown preset: {args.preset_name}')}")
+            sys.exit(1)
+        print(f"  {bold(args.preset_name)}  {muted(preset.get('description', ''))}")
+        print()
+        for key, value in preset.items():
+            if key == "description":
+                continue
+            label = color(str(value), Style.GREEN) if value and value is not True else (color(str(value), Style.CYAN) if value else muted(str(value)))
+            print(f"    {key}: {label}")
+        print()
 
 
 if __name__ == "__main__":

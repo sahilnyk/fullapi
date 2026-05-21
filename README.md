@@ -1,226 +1,170 @@
+<div align="center">
+
+<img src="logo.svg" alt="fullapi" width="200"/>
+
 # fullapi
 
-A FastAPI project scaffolder that generates complete project structures with one command. Built with pure Python stdlib - no external dependencies.
+**FastAPI project scaffolder — one command, full stack**
 
-## Installation
+[![PyPI](https://img.shields.io/pypi/v/fullapi?color=009688)](https://pypi.org/project/fullapi/)
+[![Python](https://img.shields.io/pypi/pyversions/fullapi?color=009688)](https://pypi.org/project/fullapi/)
+[![License](https://img.shields.io/github/license/sahilnyk/fullapi?color=009688)](LICENSE)
+[![Downloads](https://img.shields.io/pypi/dm/fullapi?color=009688)](https://pypi.org/project/fullapi/)
 
-Install from PyPI:
+[Quick Start](#quick-start) · [Commands](#commands) · [Presets](#presets) · [Features](#features)
 
-```bash
-pip install fullapi
-```
+</div>
 
-Or install from source:
-
-```bash
-git clone https://github.com/sahilnyk/fullapi.git
-cd fullapi
-pip install -e .
-```
+---
 
 ## Quick Start
 
-Create a new project interactively:
-
 ```bash
-fullapi new my_project
+pip install fullapi
+fullapi new my_api --preset production
+cd my_api && pip install -r requirements.txt
+uvicorn main:app --reload
 ```
 
-This starts an interactive prompt where you select:
-- Mode (basic or full)
-- Database (none, sqlite, postgresql, mysql)
-- Authentication (none or JWT)
-- Docker support
+Visit `http://localhost:8000/docs` for auto-generated API documentation.
+
+---
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| `fullapi new <name>` | Create new project with prompts |
-| `fullapi new <name> --basic` | Basic mode, skip prompts |
-| `fullapi new <name> --full` | Full mode, skip prompts |
-| `fullapi new <name> --full --db postgresql --auth --docker` | All features |
-| `fullapi --version` | Show version |
-| `fullapi --help` | Show help |
+```bash
+# Interactive mode
+fullapi new my_api
+
+# Use a preset
+fullapi new my_api --preset production
+
+# Add components
+fullapi add router Product
+fullapi add model Order
+
+# Check project health
+fullapi doctor
+
+# List presets
+fullapi preset list
+```
+
+---
+
+## Presets
+
+| Preset | Description |
+|--------|-------------|
+| `production` | Full setup: PostgreSQL + auth + Docker + Redis + middleware + logging |
+| `microservice` | Lightweight: SQLite + Docker + middleware + logging |
+| `docker-ready` | Full mode with PostgreSQL + Docker + logging |
+| `minimal` | Bare essentials, nothing else |
+
+Create custom presets in `~/.fullapi/presets.json`
+
+---
 
 ## CLI Flags
 
-| Flag | Values | Description |
-|------|--------|-------------|
-| `--basic` | - | Minimal project structure |
-| `--full` | - | Complete production structure |
-| `--db` | none, sqlite, postgresql, mysql | Database choice |
-| `--auth` | - | Add JWT authentication |
-| `--docker` | - | Add Docker files |
-| `--redis` | - | Add Redis caching support |
-| `--middleware` | - | Add middleware (CORS, rate limiting, security) |
-| `--logging` | - | Add structured logging configuration |
-| `--template` | path | Use custom template directory |
+```bash
+fullapi new my_api [OPTIONS]
+
+OPTIONS:
+  --basic              Minimal structure
+  --full               Production-ready structure
+  --db TYPE            none | sqlite | postgresql | mysql
+  --auth               JWT authentication
+  --docker             Docker + docker-compose
+  --redis              Redis caching
+  --middleware         CORS, rate limiting, security headers
+  --logging            Structured logging
+  --template PATH      Custom template directory
+  --preset NAME        Use a preset configuration
+```
+
+---
+
+## Features
+
+✨ **Zero Dependencies** — Pure Python stdlib  
+⚡ **Instant Setup** — Complete project in seconds  
+🎯 **Production Ready** — Auth, Docker, DB migrations, caching  
+🔧 **Extensible** — Add routers/models to existing projects  
+🩺 **Health Checks** — `fullapi doctor` validates structure  
+📦 **Presets** — Save common configurations  
+🎨 **Custom Templates** — Bring your own boilerplate  
+
+---
 
 ## What Gets Created
 
 ### Basic Mode
+```
+my_project/
+├── main.py
+├── routers/health.py
+├── schemas/base.py
+├── core/config.py
+├── requirements.txt
+└── .fullapi.json
+```
 
-A minimal starting point for small APIs:
-
+### Full Mode (--db postgresql --auth --docker)
 ```
 my_project/
 ├── main.py
 ├── routers/
-│   └── health.py
-├── schemas/
-│   └── base.py
-├── core/
-│   └── config.py
-└── requirements.txt
-```
-
-### Full Mode
-
-Production-ready structure with all components:
-
-```
-my_project/
-├── main.py
-├── routers/
-│   ├── __init__.py
 │   ├── health.py
 │   └── users.py
-├── models/
-│   ├── __init__.py
-│   └── user.py
-├── schemas/
-│   ├── __init__.py
-│   ├── base.py
-│   └── user.py
-├── crud/
-│   ├── __init__.py
-│   └── user.py
+├── models/user.py
+├── schemas/user.py
+├── crud/user.py
 ├── core/
-│   ├── __init__.py
 │   ├── config.py
-│   └── security.py      (if --auth)
-├── db/
-│   ├── __init__.py
-│   └── session.py       (if --db)
-├── tests/
-│   └── test_main.py
-├── deps.py
-├── .env.example
+│   └── security.py
+├── db/session.py
+├── alembic/
+│   ├── env.py
+│   └── versions/
+├── tests/test_main.py
+├── Dockerfile
+├── docker-compose.yml
 ├── requirements.txt
-├── Dockerfile           (if --docker)
-└── docker-compose.yml   (if --docker)
+├── .env.example
+└── .fullapi.json
 ```
 
-## Features
-
-- Interactive prompts for configuration
-- CLI flags for automation
-- Database support: SQLite, PostgreSQL, MySQL
-- JWT authentication with OAuth2
-- Docker and docker-compose setup
-- Alembic database migrations
-- Redis caching with connection pooling
-- Middleware: CORS, rate limiting, security headers, Gzip
-- Structured logging with multiple handlers
-- Custom template support
-- Add routers and models to existing projects
-- Progress bar during scaffolding
-- Overwrite protection for existing directories
-- Zero external dependencies
+---
 
 ## Examples
 
-Basic API:
 ```bash
-fullapi new my_api --basic
+# Start with a preset
+fullapi new api --preset production
+
+# Customized setup
+fullapi new api --full --db mysql --auth --redis --middleware
+
+# Basic API
+fullapi new api --basic
+
+# Custom template
+fullapi new api --template ./my_template
 ```
 
-Full API with PostgreSQL:
-```bash
-fullapi new my_api --full --db postgresql
-```
-
-Complete setup with all features:
-```bash
-fullapi new my_api --full --db postgresql --auth --docker --redis --middleware --logging
-```
-
-Add components to existing project:
-```bash
-cd my_project
-fullapi add router Product
-fullapi add model Order
-```
-
-## Running Your Project
-
-After scaffolding:
-
-```bash
-cd my_project
-pip install -r requirements.txt
-uvicorn main:app --reload
-```
-
-Visit http://localhost:8000/docs for the auto-generated API documentation.
-
-## Architecture
-
-fullapi is built entirely with Python standard library:
-
-- argparse for CLI parsing
-- pathlib for file operations
-- string.Template for code generation
-- ANSI escape codes for terminal output
-
-The tool uses a simple dataclass (ProjectConfig) to drive all decisions. No complex logic or external templating engines.
+---
 
 ## Contributing
 
-Contributions are welcome. Guidelines:
+1. Keep it stdlib only — no new dependencies
+2. Test your changes: `pip install -e . && fullapi new test_project --full`
+3. One feature per PR
 
-1. Keep it stdlib only - no new dependencies
-2. Write clean, readable code
-3. Test your changes before submitting
-4. One feature per PR
-
-To contribute:
-
-```bash
-# Fork and clone
-git clone https://github.com/sahilnyk/fullapi.git
-cd fullapi
-
-# Make changes
-# ...
-
-# Test
-pip install -e .
-fullapi new test_project --full
-
-# Submit PR
-```
-
-## Roadmap
-
-- Basic scaffolding (done)
-- Full scaffolding with models/CRUD (done)
-- Database support (done)
-- JWT authentication (done)
-- Docker support (done)
-- Progress bar (done)
-- Add router/model to existing projects (done)
-- Alembic migrations (done)
-- Redis support (done)
-- Custom templates (done)
-- Middleware support (done)
-- Logging support (done)
+---
 
 ## License
 
-MIT License - see LICENSE file for details.
+MIT License — see [LICENSE](LICENSE)
 
-## Author
-
-Sahil Nayak - https://github.com/sahilnyk
+**Created by** [Sahil Nayak](https://github.com/sahilnyk)

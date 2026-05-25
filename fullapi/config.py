@@ -6,7 +6,7 @@ from dataclasses import dataclass
 @dataclass
 class ProjectConfig:
     """Configuration that drives all scaffolding decisions."""
-    
+
     name: str
     mode: str = "basic"  # basic | full
     database: str = "none"  # none | sqlite | postgresql | mysql
@@ -16,3 +16,7 @@ class ProjectConfig:
     middleware: bool = False
     logging: bool = False
     template: str = None  # Path to custom template directory
+    terraform: bool = False
+    cloud_provider: str = None  # aws | gcp | azure
+    region: str = None
+    instance_size: str = "small"  # small | medium | large

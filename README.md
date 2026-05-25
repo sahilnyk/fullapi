@@ -22,6 +22,17 @@ uvicorn main:app --reload
 
 Visit `http://localhost:8000/docs` for auto-generated API documentation.
 
+### With Infrastructure
+
+```bash
+fullapi new my_api --full --db postgresql --docker --terraform
+cd my_api
+pip install -r requirements.txt
+fullapi docker build
+fullapi docker push
+fullapi terraform apply
+```
+
 ## Commands
 
 ```bash
@@ -40,6 +51,22 @@ fullapi doctor
 
 # List presets
 fullapi preset list
+
+# Terraform operations
+fullapi terraform init
+fullapi terraform plan
+fullapi terraform apply
+fullapi terraform destroy
+
+# Docker operations
+fullapi docker build
+fullapi docker push
+
+# Scaling
+fullapi scale up
+fullapi scale down
+fullapi scale set medium
+fullapi scale status
 ```
 
 ## Presets
@@ -67,6 +94,7 @@ OPTIONS:
   --redis              Redis caching
   --middleware         CORS, rate limiting, security headers
   --logging            Structured logging
+  --terraform          Terraform infrastructure (AWS, GCP, Azure)
   --template PATH      Custom template directory
   --preset NAME        Use a preset configuration
 ```
@@ -76,6 +104,9 @@ OPTIONS:
 **Zero Dependencies** — Pure Python stdlib  
 **Instant Setup** — Complete project in seconds  
 **Production Ready** — Auth, Docker, DB migrations, caching  
+**Cloud Infrastructure** — Terraform for AWS, GCP, Azure  
+**Container Ops** — Build and push Docker images  
+**Auto Scaling** — Scale infrastructure with simple commands  
 **Extensible** — Add routers/models to existing projects  
 **Health Checks** — `fullapi doctor` validates structure  
 **Presets** — Save common configurations  
@@ -94,7 +125,7 @@ my_project/
 └── .fullapi.json
 ```
 
-### Full Mode (--db postgresql --auth --docker)
+### Full Mode (--db postgresql --auth --docker --terraform)
 ```
 my_project/
 ├── main.py
@@ -111,6 +142,12 @@ my_project/
 ├── alembic/
 │   ├── env.py
 │   └── versions/
+├── terraform/
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── outputs.tf
+│   ├── terraform.tfvars
+│   └── README.md
 ├── tests/test_main.py
 ├── Dockerfile
 ├── docker-compose.yml
@@ -131,9 +168,50 @@ fullapi new api --full --db mysql --auth --redis --middleware
 # Basic API
 fullapi new api --basic
 
+# With cloud infrastructure
+fullapi new api --full --db postgresql --docker --terraform
+
 # Custom template
 fullapi new api --template ./my_template
 ```
+
+## Infrastructure Management
+
+Deploy your FastAPI app to AWS, GCP, or Azure with built-in Terraform support:
+
+```bash
+# Create project with infrastructure
+fullapi new myapi --full --db postgresql --docker --redis --terraform
+
+# Build and push Docker image
+cd myapi
+fullapi docker build
+fullapi docker push
+
+# Deploy to cloud
+fullapi terraform init
+fullapi terraform plan
+fullapi terraform apply
+
+# Scale resources
+fullapi scale up              # Increase instance size
+fullapi scale down            # Decrease instance size
+fullapi scale set large       # Set specific size
+fullapi scale status          # View current configuration
+
+# Destroy infrastructure
+fullapi terraform destroy
+```
+
+**Supported Cloud Providers:**
+- AWS (ECS Fargate, RDS, ElastiCache, ECR)
+- Google Cloud (Cloud Run, Cloud SQL, Memorystore, Artifact Registry)
+- Azure (Container Apps, Azure Database, Azure Cache, ACR)
+
+**Cost-Optimized Defaults:**
+- Small: 1 vCPU, 2GB RAM (~$10-15/month)
+- Medium: 2 vCPU, 4GB RAM (~$25-35/month)
+- Large: 4 vCPU, 8GB RAM (~$60-80/month)
 
 ## Contributing
 

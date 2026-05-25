@@ -15,6 +15,12 @@ from fullapi.scaffold import scaffold_project
 from fullapi.add_component import add_component_to_project
 from fullapi.doctor import run_doctor
 from fullapi.presets import get_preset, apply_preset, list_presets
+from fullapi.terraform_ops import (
+    terraform_init, terraform_validate, terraform_plan,
+    terraform_apply, terraform_destroy, terraform_output
+)
+from fullapi.docker_ops import docker_build, docker_push
+from fullapi.scale_ops import scale_up, scale_down, scale_set, scale_status
 
 
 def print_banner():
@@ -97,6 +103,7 @@ Examples:
     new_parser.add_argument("--middleware", action="store_true", help="Add middleware support")
     new_parser.add_argument("--logging", action="store_true", help="Add logging support")
     new_parser.add_argument("--preset", type=str, help="Use a named preset (e.g. production, microservice)")
+    new_parser.add_argument("--terraform", action="store_true", help="Add Terraform infrastructure")
     
     # 'add' command
     add_parser = subparsers.add_parser(
@@ -142,7 +149,40 @@ Examples:
     preset_parser.add_argument("-h", "--help", action="help", help="Show help for preset command")
     preset_parser.add_argument("action", choices=["list", "show"], help="Action: list or show")
     preset_parser.add_argument("preset_name", nargs="?", help="Preset name (for show)")
-    
+
+    # 'terraform' command
+    terraform_parser = subparsers.add_parser(
+        "terraform",
+        help="Terraform operations",
+        description="Manage infrastructure with Terraform",
+        add_help=False
+    )
+    terraform_parser.add_argument("-h", "--help", action="help", help="Show help for terraform command")
+    terraform_parser.add_argument("action", choices=["init", "validate", "plan", "apply", "destroy", "output"],
+                                  help="Terraform action")
+
+    # 'docker' command
+    docker_parser = subparsers.add_parser(
+        "docker",
+        help="Docker operations",
+        description="Build and push Docker images",
+        add_help=False
+    )
+    docker_parser.add_argument("-h", "--help", action="help", help="Show help for docker command")
+    docker_parser.add_argument("action", choices=["build", "push"], help="Docker action")
+
+    # 'scale' command
+    scale_parser = subparsers.add_parser(
+        "scale",
+        help="Scale infrastructure",
+        description="Scale infrastructure resources",
+        add_help=False
+    )
+    scale_parser.add_argument("-h", "--help", action="help", help="Show help for scale command")
+    scale_parser.add_argument("action", choices=["up", "down", "set", "status"], help="Scale action")
+    scale_parser.add_argument("size", nargs="?", choices=["small", "medium", "large"],
+                             help="Instance size (for set action)")
+
     args = parser.parse_args()
     
     if args.command is None:
@@ -162,6 +202,12 @@ Examples:
     elif args.command == "preset":
         print_banner()
         handle_preset(args)
+    elif args.command == "terraform":
+        handle_terraform(args)
+    elif args.command == "docker":
+        handle_docker(args)
+    elif args.command == "scale":
+        handle_scale(args)
 
 
 def handle_new(args):
@@ -203,7 +249,8 @@ def handle_new(args):
             redis=args.redis,
             middleware=args.middleware,
             logging=args.logging,
-            template=args.template
+            template=args.template,
+            terraform=args.terraform
         )
     else:
         # Interactive prompt mode
@@ -276,6 +323,51 @@ def handle_preset(args):
                 label = muted("none")
             print(f"    {key}: {label}")
         print()
+
+
+def handle_terraform(args):
+    """Handle the 'terraform' command."""
+    actions = {
+        "init": terraform_init,
+        "validate": terraform_validate,
+        "plan": terraform_plan,
+        "apply": terraform_apply,
+        "destroy": terraform_destroy,
+        "output": terraform_output,
+    }
+
+    exit_code = actions[args.action]()
+    sys.exit(exit_code)
+
+
+def handle_docker(args):
+    """Handle the 'docker' command."""
+    actions = {
+        "build": docker_build,
+        "push": docker_push,
+    }
+
+    exit_code = actions[args.action]()
+    sys.exit(exit_code)
+
+
+def handle_scale(args):
+    """Handle the 'scale' command."""
+    if args.action == "up":
+        exit_code = scale_up()
+    elif args.action == "down":
+        exit_code = scale_down()
+    elif args.action == "set":
+        if not args.size:
+            print(f"{color('[ERROR]', Style.RED)} Size required: fullapi scale set <small|medium|large>")
+            sys.exit(1)
+        exit_code = scale_set(args.size)
+    elif args.action == "status":
+        exit_code = scale_status()
+    else:
+        exit_code = 1
+
+    sys.exit(exit_code)
 
 
 if __name__ == "__main__":

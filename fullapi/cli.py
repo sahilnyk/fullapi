@@ -240,6 +240,53 @@ def handle_new(args):
         print()
     elif args.basic or args.full:
         # CLI flags mode
+        cloud_provider = None
+        region = None
+        instance_size = "small"
+
+        # If terraform flag is set, prompt for cloud configuration
+        if args.terraform:
+            from fullapi.prompt import _prompt_choice
+            print()
+            cloud_provider_idx = _prompt_choice(
+                "Cloud Provider",
+                ["AWS", "Google Cloud (GCP)", "Azure"]
+            )
+            provider_map = {0: "aws", 1: "gcp", 2: "azure"}
+            cloud_provider = provider_map[cloud_provider_idx]
+
+            print()
+            if cloud_provider == "aws":
+                region_idx = _prompt_choice(
+                    "AWS Region",
+                    ["us-east-1", "us-west-2", "eu-west-1"]
+                )
+                regions = ["us-east-1", "us-west-2", "eu-west-1"]
+            elif cloud_provider == "gcp":
+                region_idx = _prompt_choice(
+                    "GCP Region",
+                    ["us-central1", "us-west1", "europe-west1"]
+                )
+                regions = ["us-central1", "us-west1", "europe-west1"]
+            else:  # azure
+                region_idx = _prompt_choice(
+                    "Azure Region",
+                    ["eastus", "westus2", "westeurope"]
+                )
+                regions = ["eastus", "westus2", "westeurope"]
+            region = regions[region_idx]
+
+            print()
+            size_idx = _prompt_choice(
+                "Instance Size",
+                ["Small (1 vCPU, 2GB RAM) - $10-15/month",
+                 "Medium (2 vCPU, 4GB RAM) - $25-35/month",
+                 "Large (4 vCPU, 8GB RAM) - $60-80/month"]
+            )
+            sizes = ["small", "medium", "large"]
+            instance_size = sizes[size_idx]
+            print()
+
         config = ProjectConfig(
             name=args.project_name,
             mode="full" if args.full else "basic",
@@ -250,7 +297,10 @@ def handle_new(args):
             middleware=args.middleware,
             logging=args.logging,
             template=args.template,
-            terraform=args.terraform
+            terraform=args.terraform,
+            cloud_provider=cloud_provider,
+            region=region,
+            instance_size=instance_size
         )
     else:
         # Interactive prompt mode

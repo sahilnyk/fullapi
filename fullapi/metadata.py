@@ -13,7 +13,7 @@ METADATA_FILE = ".fullapi.json"
 
 def generate_metadata(config: ProjectConfig) -> dict:
     """Generate metadata dict from project config."""
-    return {
+    metadata = {
         "version": __version__,
         "created_at": datetime.now().isoformat(),
         "name": config.name,
@@ -25,7 +25,15 @@ def generate_metadata(config: ProjectConfig) -> dict:
         "middleware": config.middleware,
         "logging": config.logging,
         "template": config.template,
+        "terraform": config.terraform,
     }
+
+    if config.terraform:
+        metadata["cloud_provider"] = config.cloud_provider
+        metadata["region"] = config.region
+        metadata["instance_size"] = config.instance_size
+
+    return metadata
 
 
 def write_metadata(project_path: Path, config: ProjectConfig) -> None:

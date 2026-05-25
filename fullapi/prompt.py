@@ -83,7 +83,71 @@ def prompt_config(project_name: str) -> ProjectConfig:
          "Add Logging"]
     )
     logging = logging == 1
-    
+    print()
+
+    terraform = _prompt_choice(
+        "Terraform",
+        ["Skip Terraform",
+         "Add Terraform infrastructure"]
+    )
+    terraform = terraform == 1
+
+    # Terraform prompts
+    cloud_provider = None
+    region = None
+    instance_size = "small"
+
+    if terraform:
+        print()
+        cloud_provider_idx = _prompt_choice(
+            "Cloud Provider",
+            ["AWS",
+             "Google Cloud (GCP)",
+             "Azure"]
+        )
+        provider_map = {0: "aws", 1: "gcp", 2: "azure"}
+        cloud_provider = provider_map[cloud_provider_idx]
+
+        print()
+        # Region selection based on provider
+        if cloud_provider == "aws":
+            region_idx = _prompt_choice(
+                "AWS Region",
+                ["us-east-1",
+                 "us-west-2",
+                 "eu-west-1"]
+            )
+            regions = ["us-east-1", "us-west-2", "eu-west-1"]
+            region = regions[region_idx]
+        elif cloud_provider == "gcp":
+            region_idx = _prompt_choice(
+                "GCP Region",
+                ["us-central1",
+                 "us-west1",
+                 "europe-west1"]
+            )
+            regions = ["us-central1", "us-west1", "europe-west1"]
+            region = regions[region_idx]
+        elif cloud_provider == "azure":
+            region_idx = _prompt_choice(
+                "Azure Region",
+                ["eastus",
+                 "westus2",
+                 "westeurope"]
+            )
+            regions = ["eastus", "westus2", "westeurope"]
+            region = regions[region_idx]
+
+        print()
+        size_idx = _prompt_choice(
+            "Instance Size",
+            ["Small (1 vCPU, 2GB RAM) - $10-15/month",
+             "Medium (2 vCPU, 4GB RAM) - $25-35/month",
+             "Large (4 vCPU, 8GB RAM) - $60-80/month"]
+        )
+        sizes = ["small", "medium", "large"]
+        instance_size = sizes[size_idx]
+
     return ProjectConfig(
         name=project_name,
         mode=mode,
@@ -92,7 +156,11 @@ def prompt_config(project_name: str) -> ProjectConfig:
         docker=docker,
         redis=redis,
         middleware=middleware,
-        logging=logging
+        logging=logging,
+        terraform=terraform,
+        cloud_provider=cloud_provider,
+        region=region,
+        instance_size=instance_size
     )
 
 

@@ -12,6 +12,7 @@ from fullapi.colors import (
     success, error, warning, info, muted, bold, color, Style
 )
 from fullapi.templates import main_basic, router, schema, config as config_templates, requirements, alembic, redis, middleware, logging as logging_templates
+from fullapi.templates import terraform as terraform_templates
 from fullapi.custom_templates import load_custom_template, CustomTemplateManager
 from fullapi.metadata import write_metadata
 from fullapi.prompt import show_loading_animation
@@ -144,36 +145,98 @@ def scaffold_project(config: ProjectConfig) -> None:
     # Write project metadata
     write_metadata(project_path, config)
 
+    # Generate Terraform files if requested
+    if config.terraform:
+        _generate_terraform_files(project_path, config)
+
     print()
     show_loading_animation("Finalizing project setup", 0.5)
 
     print(f"  {ICON_CHECK}  {success('Project created successfully!')}")
     print()
+
+    # Show Terraform warning if enabled
+    if config.terraform:
+        print(f"  {color('[WARNING] Cross-validate Terraform files before applying', Style.YELLOW)}")
+        print()
+
     print(f"  {bold('Next steps:')}")
     print(f"    {color('cd', Style.CYAN)} {config.name}")
     print(f"    {color('pip install -r', Style.CYAN)} requirements.txt")
+    if config.terraform:
+        print(f"    {color('fullapi terraform init', Style.CYAN)}")
+        print(f"    {color('fullapi terraform plan', Style.CYAN)}")
     print(f"    {color('uvicorn', Style.CYAN)} main:app --reload")
     print()
     print(f"  {muted('Docs:')} http://localhost:8000/docs")
     print()
 
 
+def _generate_terraform_files(project_path: Path, config: ProjectConfig):
+    """Generate Terraform configuration files."""
+    terraform_dir = project_path / "terraform"
+    terraform_dir.mkdir(exist_ok=True)
+
+    enable_database = config.database != "none"
+    enable_cache = config.redis
+
+    # Generate main.tf
+    main_tf_content = terraform_templates.main_tf(
+        config.name,
+        config.cloud_provider,
+        enable_database,
+        enable_cache
+    )
+    (terraform_dir / "main.tf").write_text(main_tf_content)
+
+    # Generate variables.tf
+    variables_tf_content = terraform_templates.variables_tf(
+        config.cloud_provider,
+        enable_database,
+        enable_cache
+    )
+    (terraform_dir / "variables.tf").write_text(variables_tf_content)
+
+    # Generate outputs.tf
+    outputs_tf_content = terraform_templates.outputs_tf(
+        enable_database,
+        enable_cache
+    )
+    (terraform_dir / "outputs.tf").write_text(outputs_tf_content)
+
+    # Generate terraform.tfvars
+    tfvars_content = terraform_templates.terraform_tfvars(config)
+    (terraform_dir / "terraform.tfvars").write_text(tfvars_content)
+
+    # Generate README
+    readme_content = terraform_templates.readme_terraform()
+    (terraform_dir / "README.md").write_text(readme_content)
+
+    # Update .gitignore
+    gitignore_path = project_path / ".gitignore"
+    if gitignore_path.exists():
+        current = gitignore_path.read_text()
+        gitignore_path.write_text(current + terraform_templates.gitignore_additions())
+    else:
+        gitignore_path.write_text(terraform_templates.gitignore_additions())
+
+
 def _show_progress(current: int, total: int, filename: str):
     """Render progress bar with file name."""
     width = 20
     progress = int((current / total) * width)
-    
+
     filled = color("█" * progress, Style.GREEN)
     empty = color("░" * (width - progress), Style.DIM)
     bar = filled + empty
-    
+
     percent = int((current / total) * 100)
-    
+
     clear = "\033[K"  # Clear to end of line
     line = f"  {bar} {color(str(percent) + '%', Style.CYAN)} {muted(filename)}"
-    
+
     print(f"\r{clear}{line}", end="", flush=True)
-    
+
     if current == total:
         print()
     else:

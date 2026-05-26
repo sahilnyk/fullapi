@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fullapi"
-version = "1.0.0"
+version = "1.1.0"
 description = "FastAPI project scaffolder — zero dependencies, one command."
 readme = "README.md"
 requires-python = ">=3.8"

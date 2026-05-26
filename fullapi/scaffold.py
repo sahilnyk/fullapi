@@ -339,21 +339,57 @@ def _collect_full(files: list, config: ProjectConfig, template_vars: dict):
         files.append(("core/logging_config.py", logging_templates.LOGGING_CONFIG))
         files.append(("core/logging_setup.py", logging_templates.LOGGING_SETUP))
     
-    req_content = requirements.FULL
+    # Build requirements as a set to avoid duplicates
+    req_lines = set()
+
+    # Add base requirements
+    for line in requirements.FULL_BASE.strip().split('\n'):
+        if line.strip():
+            req_lines.add(line.strip())
+
+    # Add database-specific requirements
     if config.database == "postgresql":
-        req_content += requirements.FULL_POSTGRESQL
+        for line in requirements.FULL_POSTGRESQL.strip().split('\n'):
+            if line.strip():
+                req_lines.add(line.strip())
     elif config.database == "mysql":
-        req_content += requirements.FULL_MYSQL
+        for line in requirements.FULL_MYSQL.strip().split('\n'):
+            if line.strip():
+                req_lines.add(line.strip())
+
+    # Add auth requirements
     if config.auth:
-        req_content += requirements.FULL_AUTH
+        for line in requirements.FULL_AUTH.strip().split('\n'):
+            if line.strip():
+                req_lines.add(line.strip())
+
+    # Add alembic requirements
     if config.database != "none":
-        req_content += alembic.REQUIREMENTS_ALEMBIC
+        for line in alembic.REQUIREMENTS_ALEMBIC.strip().split('\n'):
+            if line.strip():
+                req_lines.add(line.strip())
+
+    # Add redis requirements
     if config.redis:
-        req_content += redis.REQUIREMENTS_REDIS
+        for line in redis.REQUIREMENTS_REDIS.strip().split('\n'):
+            if line.strip():
+                req_lines.add(line.strip())
+
+    # Add middleware requirements
     if config.middleware:
-        req_content += middleware.REQUIREMENTS_MIDDLEWARE
-    if config.logging:
-        req_content += logging_templates.REQUIREMENTS_LOGGING
+        for line in middleware.REQUIREMENTS_MIDDLEWARE.strip().split('\n'):
+            if line.strip():
+                req_lines.add(line.strip())
+
+    # Add logging requirements (if any)
+    if config.logging and hasattr(logging_templates, 'REQUIREMENTS_LOGGING'):
+        for line in logging_templates.REQUIREMENTS_LOGGING.strip().split('\n'):
+            if line.strip():
+                req_lines.add(line.strip())
+
+    # Sort and join, filtering out comments
+    req_lines = {line for line in req_lines if not line.startswith('#')}
+    req_content = '\n'.join(sorted(req_lines)) + '\n'
     files.append(("requirements.txt", req_content))
     
     from fullapi.templates import env

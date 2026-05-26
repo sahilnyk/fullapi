@@ -1,29 +1,24 @@
 """Requirements templates."""
 
-BASIC = '''fastapi
-uvicorn
-pydantic-settings
+BASIC = '''fastapi>=0.100.0
+uvicorn[standard]>=0.22.0
+pydantic-settings>=2.0.0
 '''
 
-FULL = '''fastapi
-uvicorn
-pydantic
-pydantic[email]
-pydantic-settings
-sqlalchemy
+FULL_BASE = '''fastapi>=0.100.0
+uvicorn[standard]>=0.22.0
+pydantic>=2.0.0
+email-validator>=2.0.0
+pydantic-settings>=2.0.0
+sqlalchemy>=2.0.0
 '''
 
-FULL_SQLITE = FULL + '''
+FULL_POSTGRESQL = '''psycopg2-binary>=2.9.0
 '''
 
-FULL_POSTGRESQL = FULL + '''
-psycopg2-binary
+FULL_MYSQL = '''pymysql>=1.0.0
 '''
 
-FULL_MYSQL = FULL + '''
-pymysql
-'''
-
-FULL_AUTH = '''python-jose[cryptography]
-passlib[bcrypt]
+FULL_AUTH = '''python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.0
 '''

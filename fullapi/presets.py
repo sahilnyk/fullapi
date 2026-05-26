@@ -16,6 +16,7 @@ BUILTIN_PRESETS = {
         "redis": True,
         "middleware": True,
         "logging": True,
+        "terraform": False,  # Requires interactive prompts
     },
     "minimal": {
         "description": "Bare minimum API",

@@ -33,24 +33,53 @@ def add_component_to_project(component_type: str, component_name: str) -> None:
 
 def _add_router(name: str) -> None:
     """Add a new router with CRUD operations."""
+    # Check project configuration
+    import json
+    config_path = Path(".fullapi.json")
+    has_db = False
+    if config_path.exists():
+        try:
+            config = json.loads(config_path.read_text())
+            has_db = config.get("database", "none") != "none"
+        except:
+            pass
+
+    # If no config, check if db/ directory exists
+    if not has_db:
+        has_db = Path("db").exists()
+
     template_vars = {
         "model_name": name,
         "model_name_lower": name.lower(),
         "model_name_plural": name.lower() + "s"
     }
-    
+
     # Create router file
     router_path = Path(f"routers/{name.lower()}.py")
     if router_path.exists():
         print(f"  {ICON_WARNING}  {warning(f'Router {name.lower()}.py already exists')}")
         return
-    
+
     router_path.parent.mkdir(exist_ok=True)
-    router_content = Template(_get_router_template()).substitute(template_vars)
+
+    # Use appropriate template based on database availability
+    if has_db:
+        router_content = Template(_get_router_template_with_db()).substitute(template_vars)
+    else:
+        router_content = Template(_get_router_template_simple()).substitute(template_vars)
+
     router_path.write_text(router_content)
-    
+
     _show_progress(f"routers/{name.lower()}.py")
-    
+
+    # Create schema file if it doesn't exist
+    schema_path = Path(f"schemas/{name.lower()}.py")
+    if not schema_path.exists():
+        schema_path.parent.mkdir(exist_ok=True)
+        schema_content = Template(_get_schema_template()).substitute(template_vars)
+        schema_path.write_text(schema_content)
+        _show_progress(f"schemas/{name.lower()}.py")
+
     # Update main.py to include the new router
     _update_main_py(name)
 
@@ -167,8 +196,73 @@ def _show_progress(filename: str):
     print(f"  {color('✓', Style.GREEN)} {muted(filename)}")
 
 
-def _get_router_template() -> str:
-    """Get template for router file."""
+def _get_router_template_simple() -> str:
+    """Get template for router file without database."""
+    return '''"""${model_name} router."""
+
+from fastapi import APIRouter, HTTPException
+from typing import List
+from schemas.${model_name_lower} import ${model_name}, ${model_name}Create, ${model_name}Update
+
+router = APIRouter()
+
+# In-memory storage for demonstration
+${model_name_lower}_storage = {}
+${model_name_lower}_id_counter = 1
+
+
+@router.get("/", response_model=List[${model_name}])
+def read_${model_name_plural}(skip: int = 0, limit: int = 100):
+    """Retrieve ${model_name_plural}."""
+    items = list(${model_name_lower}_storage.values())
+    return items[skip:skip + limit]
+
+
+@router.post("/", response_model=${model_name})
+def create_${model_name_lower}(${model_name_lower}: ${model_name}Create):
+    """Create a new ${model_name_lower}."""
+    global ${model_name_lower}_id_counter
+    item_id = ${model_name_lower}_id_counter
+    ${model_name_lower}_id_counter += 1
+
+    item = ${model_name}(id=item_id, **${model_name_lower}.dict())
+    ${model_name_lower}_storage[item_id] = item
+    return item
+
+
+@router.get("/{${model_name_lower}_id}", response_model=${model_name})
+def read_${model_name_lower}(${model_name_lower}_id: int):
+    """Get a specific ${model_name_lower} by ID."""
+    if ${model_name_lower}_id not in ${model_name_lower}_storage:
+        raise HTTPException(status_code=404, detail="${model_name} not found")
+    return ${model_name_lower}_storage[${model_name_lower}_id]
+
+
+@router.put("/{${model_name_lower}_id}", response_model=${model_name})
+def update_${model_name_lower}(${model_name_lower}_id: int, ${model_name_lower}: ${model_name}Update):
+    """Update a ${model_name_lower}."""
+    if ${model_name_lower}_id not in ${model_name_lower}_storage:
+        raise HTTPException(status_code=404, detail="${model_name} not found")
+
+    stored = ${model_name_lower}_storage[${model_name_lower}_id]
+    update_data = ${model_name_lower}.dict(exclude_unset=True)
+    updated = stored.copy(update=update_data)
+    ${model_name_lower}_storage[${model_name_lower}_id] = updated
+    return updated
+
+
+@router.delete("/{${model_name_lower}_id}")
+def delete_${model_name_lower}(${model_name_lower}_id: int):
+    """Delete a ${model_name_lower}."""
+    if ${model_name_lower}_id not in ${model_name_lower}_storage:
+        raise HTTPException(status_code=404, detail="${model_name} not found")
+    del ${model_name_lower}_storage[${model_name_lower}_id]
+    return {"message": "${model_name} deleted successfully"}
+'''
+
+
+def _get_router_template_with_db() -> str:
+    """Get template for router file with database."""
     return '''"""${model_name} router."""
 
 from fastapi import APIRouter, Depends, HTTPException

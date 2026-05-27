@@ -1,5 +1,8 @@
 # Contributing to fullapi
 
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-009688.svg)](https://github.com/sahilnyk/fullapi/pulls)
+[![Issues](https://img.shields.io/github/issues/sahilnyk/fullapi?color=009688)](https://github.com/sahilnyk/fullapi/issues)
+
 Thanks for your interest in contributing!
 
 ## Getting Started
@@ -12,12 +15,17 @@ pip install -e .
 
 ## Development Guidelines
 
-**1. Zero Dependencies Rule**
-- Keep the CLI tool dependency-free
-- Only stdlib imports allowed
-- Generated projects can have dependencies
+### Rules
 
-**2. Testing Your Changes**
+| Rule | Description |
+|------|-------------|
+| Zero Dependencies | Keep CLI tool dependency-free, only stdlib imports |
+| Test Changes | Test both basic and full project generation |
+| Follow Style | Use type hints, keep functions focused |
+| Clear Commits | Follow commit message format below |
+
+### Testing Your Changes
+
 ```bash
 # Test basic project
 fullapi new test_basic --basic
@@ -28,33 +36,39 @@ fullapi new test_full --full --db postgresql --auth --docker
 cd test_full && python -c "from main import app; print('✓')"
 ```
 
-**3. Code Style**
-- Follow existing code patterns
-- Use type hints
-- Keep functions focused and simple
+### Pull Request Process
 
-**4. Pull Request Process**
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature-name`)
-3. Make your changes
-4. Test thoroughly
-5. Commit with clear messages
-6. Push and create a PR
+| Step | Action |
+|------|--------|
+| 1 | Fork the repository |
+| 2 | Create feature branch: `git checkout -b feature-name` |
+| 3 | Make your changes |
+| 4 | Test thoroughly |
+| 5 | Commit with clear messages |
+| 6 | Push and create PR |
 
-**5. Commit Messages**
-- `fix: brief description` for bug fixes
-- `feat: brief description` for new features
-- `docs: brief description` for documentation
-- Keep under 50 characters
+### Commit Message Format
+
+| Type | Usage |
+|------|-------|
+| `fix:` | Bug fixes |
+| `feat:` | New features |
+| `docs:` | Documentation |
+| `refactor:` | Code refactoring |
+| `test:` | Adding tests |
+
+Keep messages under 50 characters.
 
 ## What to Contribute
 
-**Bug Fixes** - Always welcome  
-**New Features** - Open an issue first to discuss  
-**Documentation** - Improvements appreciated  
-**Templates** - New project templates  
-**Cloud Providers** - Extend Terraform support
+| Area | Status |
+|------|--------|
+| Bug Fixes | Always welcome |
+| New Features | Open issue first to discuss |
+| Documentation | Improvements appreciated |
+| Templates | New project templates |
+| Cloud Providers | Extend Terraform support |
 
 ## Questions?
 
-Open an issue or start a discussion on GitHub.
+Open an [issue](https://github.com/sahilnyk/fullapi/issues) or start a [discussion](https://github.com/sahilnyk/fullapi/discussions).

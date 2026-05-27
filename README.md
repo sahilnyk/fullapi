@@ -2,7 +2,7 @@
 
 # 🕊️ fullapi
 
-**Production-ready FastAPI projects in one command**
+CLI tool for production-ready FastAPI projects with auth, Docker, databases, and cloud deployment
 
 [![PyPI](https://img.shields.io/pypi/v/fullapi?color=009688)](https://pypi.org/project/fullapi/)
 [![Python](https://img.shields.io/pypi/pyversions/fullapi?color=009688)](https://pypi.org/project/fullapi/)
@@ -103,16 +103,18 @@ OPTIONS:
 
 ## Features
 
-**Zero Dependencies** - Pure Python stdlib  
-**Instant Setup** - Complete project in seconds  
-**Production Ready** - Auth, Docker, DB migrations, caching  
-**Cloud Infrastructure** - Terraform for AWS, GCP, Azure  
-**Container Ops** - Build and push Docker images  
-**Auto Scaling** - Scale infrastructure with simple commands  
-**Extensible** - Add routers/models to existing projects  
-**Health Checks** - `fullapi doctor` validates structure  
-**Presets** - Save common configurations  
-**Custom Templates** - Bring your own boilerplate  
+| Feature | Description |
+|---------|-------------|
+| Zero Dependencies | Pure Python stdlib |
+| Instant Setup | Complete project in seconds |
+| Production Ready | Auth, Docker, DB migrations, caching |
+| Cloud Infrastructure | Terraform for AWS, GCP, Azure |
+| Container Ops | Build and push Docker images |
+| Auto Scaling | Scale infrastructure with simple commands |
+| Extensible | Add routers/models to existing projects |
+| Health Checks | `fullapi doctor` validates structure |
+| Presets | Save common configurations |
+| Custom Templates | Bring your own boilerplate |  
 
 ## What Gets Created
 
@@ -205,16 +207,20 @@ fullapi scale status          # View current configuration
 fullapi terraform destroy
 ```
 
-**Supported Cloud Providers:**
-- AWS (ECS Fargate, RDS, ElastiCache, ECR)
-- Google Cloud (Cloud Run, Cloud SQL, Memorystore, Artifact Registry)
-- Azure (Container Apps, Azure Database, Azure Cache, ACR)
+### Supported Cloud Providers
 
-**Cost-Optimized Defaults:**
-- Small: 1 vCPU, 2GB RAM ($10-15/month)
-- Medium: 2 vCPU, 4GB RAM ($25-35/month)
-- Large: 4 vCPU, 8GB RAM ($60-80/month)
+| Provider | Container | Database | Cache | Registry |
+|----------|-----------|----------|-------|----------|
+| AWS | ECS Fargate | RDS | ElastiCache | ECR |
+| Google Cloud | Cloud Run | Cloud SQL | Memorystore | Artifact Registry |
+| Azure | Container Apps | Azure Database | Azure Cache | ACR |
 
----
+### Cost-Optimized Defaults
 
-**Created by** [Sahil Nayak](https://github.com/sahilnyk)
+| Size | Resources | Estimated Cost |
+|------|-----------|----------------|
+| Small | 1 vCPU, 2GB RAM | $10-15/month |
+| Medium | 2 vCPU, 4GB RAM | $25-35/month |
+| Large | 4 vCPU, 8GB RAM | $60-80/month |
+
+[@sahilnyk](https://github.com/sahilnyk)

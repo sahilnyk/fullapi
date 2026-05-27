@@ -80,4 +80,4 @@ fullapi new my_api [OPTIONS]
 | Medium | 2 vCPU, 4GB | $25-35 |
 | Large | 4 vCPU, 8GB | $60-80 |
 
-[@sahilnyk](https://github.com/sahilnyk)
+Built and maintained by [@sahilnyk](https://github.com/sahilnyk) with zero dependencies

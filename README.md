@@ -219,6 +219,15 @@ fullapi terraform destroy
 2. Test your changes: `pip install -e . && fullapi new test_project --full`
 3. One feature per PR
 
+## Support
+
+- 🐛 [Report bugs](https://github.com/sahilnyk/fullapi/issues)
+- 💡 [Request features](https://github.com/sahilnyk/fullapi/issues)
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.
+
 ## License
 
 MIT License — see [LICENSE](LICENSE)

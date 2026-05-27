@@ -2,6 +2,25 @@
 
 All notable changes to fullapi will be documented here.
 
+## [1.1.1] - 2026-05-28
+
+### Security Fixes (CRITICAL)
+- **SECRET_KEY auto-generation**: Now generates random key in development, enforces in production
+- **Weak default passwords**: Replaced with explicit CHANGE_ME placeholders in .env.example
+- **Python 3.12+ compatibility**: Fixed datetime.utcnow() deprecation
+- **Database connection pooling**: Added pool_size=20, max_overflow=10, auto-reconnect, hourly recycle
+- **CORS security**: Changed wildcard headers to specific allowlist (Content-Type, Authorization, X-Request-ID)
+- **SQL injection warnings**: Added security documentation in CRUD templates
+
+### Breaking Changes
+- Production apps now MUST set SECRET_KEY in .env file (intentional security measure)
+- Generate with: `python -c "import secrets; print(secrets.token_urlsafe(32))"`
+
+### Documentation
+- Improved README with tables and better organization
+- Added CONTRIBUTING.md with contribution guidelines
+- Enhanced security warnings in generated code
+
 ## [1.1.0] - 2026-05-27
 
 ### Fixed

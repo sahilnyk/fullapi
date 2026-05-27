@@ -5,6 +5,11 @@ from models.user import User
 from schemas.user import UserCreate
 from core.security import get_password_hash
 
+# SECURITY WARNING: Always use SQLAlchemy ORM methods for queries
+# NEVER use raw SQL with string formatting - it causes SQL injection!
+# BAD:  db.execute(f"SELECT * FROM users WHERE id = {user_id}")
+# GOOD: db.query(User).filter(User.id == user_id).first()
+
 
 def get_user(db: Session, user_id: int):
     return db.query(User).filter(User.id == user_id).first()

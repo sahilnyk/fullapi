@@ -13,7 +13,7 @@ class MiddlewareConfig:
         self.cors_origins: List[str] = self._get_cors_origins()
         self.cors_allow_credentials: bool = self._get_bool_env("CORS_ALLOW_CREDENTIALS", False)
         self.cors_allow_methods: List[str] = self._get_list_env("CORS_ALLOW_METHODS", ["GET", "POST", "PUT", "DELETE", "OPTIONS"])
-        self.cors_allow_headers: List[str] = self._get_list_env("CORS_ALLOW_HEADERS", ["*"])
+        self.cors_allow_headers: List[str] = self._get_list_env("CORS_ALLOW_HEADERS", ["Content-Type", "Authorization", "X-Request-ID"])
         self.cors_expose_headers: List[str] = self._get_list_env("CORS_EXPOSE_HEADERS", [])
         
         self.rate_limit_enabled: bool = self._get_bool_env("RATE_LIMIT_ENABLED", False)

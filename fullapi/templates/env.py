@@ -8,7 +8,7 @@ DATABASE_URL=sqlite:///./app.db
 DB_HOST=localhost
 DB_PORT=5432
 DB_USER=postgres
-DB_PASSWORD=password
+DB_PASSWORD=CHANGE_ME_STRONG_PASSWORD_HERE
 DB_NAME=app
 
 # Redis Configuration
@@ -28,10 +28,10 @@ REDIS_MAX_CONNECTIONS=10
 CORS_ORIGINS=http://localhost:3000,http://localhost:8000
 CORS_ALLOW_CREDENTIALS=false
 CORS_ALLOW_METHODS=GET,POST,PUT,DELETE,OPTIONS
-CORS_ALLOW_HEADERS=*
+CORS_ALLOW_HEADERS=Content-Type,Authorization,X-Request-ID
 CORS_EXPOSE_HEADERS=
 
-# Rate Limiting Configuration
+# Rate Limiting Configuration - ENABLED by default for security
 RATE_LIMIT_ENABLED=true
 RATE_LIMIT_REQUESTS=100
 RATE_LIMIT_WINDOW=60
@@ -70,8 +70,8 @@ JSON_LOG_ENABLED=false
 STRUCTURED_LOGGING_ENABLED=false
 ERROR_LOG_ENABLED=true
 
-# JWT
-SECRET_KEY=your-super-secret-key-change-in-production
+# JWT - REQUIRED: Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
+SECRET_KEY=CHANGE_ME_GENERATE_RANDOM_SECRET_KEY
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 '''

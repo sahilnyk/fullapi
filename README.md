@@ -2,12 +2,14 @@
 
 # 🕊️ fullapi
 
-**FastAPI project scaffolder — one command, full stack**
+**Production-ready FastAPI projects in one command**
 
 [![PyPI](https://img.shields.io/pypi/v/fullapi?color=009688)](https://pypi.org/project/fullapi/)
 [![Python](https://img.shields.io/pypi/pyversions/fullapi?color=009688)](https://pypi.org/project/fullapi/)
-[![License](https://img.shields.io/github/license/sahilnyk/fullapi?color=009688)](LICENSE)
 [![Downloads](https://img.shields.io/pypi/dm/fullapi?color=009688)](https://pypi.org/project/fullapi/)
+[![Issues](https://img.shields.io/github/issues/sahilnyk/fullapi?color=009688)](https://github.com/sahilnyk/fullapi/issues)
+[![Changelog](https://img.shields.io/badge/changelog-1.1.0-009688)](CHANGELOG.md)
+[![Contributing](https://img.shields.io/badge/PRs-welcome-009688)](CONTRIBUTING.md)
 
 </div>
 
@@ -73,10 +75,10 @@ fullapi scale status
 
 | Preset | Description |
 |--------|-------------|
-| `production` | Full setup: PostgreSQL + auth + Docker + Redis + middleware + logging |
-| `microservice` | Lightweight: SQLite + Docker + middleware + logging |
-| `docker-ready` | Full mode with PostgreSQL + Docker + logging |
-| `minimal` | Bare essentials, nothing else |
+| `production` | PostgreSQL + auth + Docker + Redis + middleware + logging |
+| `microservice` | SQLite + Docker + middleware + logging |
+| `docker-ready` | PostgreSQL + Docker + logging |
+| `minimal` | Basic API structure only |
 
 Create custom presets in `~/.fullapi/presets.json`
 
@@ -101,16 +103,16 @@ OPTIONS:
 
 ## Features
 
-**Zero Dependencies** — Pure Python stdlib  
-**Instant Setup** — Complete project in seconds  
-**Production Ready** — Auth, Docker, DB migrations, caching  
-**Cloud Infrastructure** — Terraform for AWS, GCP, Azure  
-**Container Ops** — Build and push Docker images  
-**Auto Scaling** — Scale infrastructure with simple commands  
-**Extensible** — Add routers/models to existing projects  
-**Health Checks** — `fullapi doctor` validates structure  
-**Presets** — Save common configurations  
-**Custom Templates** — Bring your own boilerplate  
+**Zero Dependencies** - Pure Python stdlib  
+**Instant Setup** - Complete project in seconds  
+**Production Ready** - Auth, Docker, DB migrations, caching  
+**Cloud Infrastructure** - Terraform for AWS, GCP, Azure  
+**Container Ops** - Build and push Docker images  
+**Auto Scaling** - Scale infrastructure with simple commands  
+**Extensible** - Add routers/models to existing projects  
+**Health Checks** - `fullapi doctor` validates structure  
+**Presets** - Save common configurations  
+**Custom Templates** - Bring your own boilerplate  
 
 ## What Gets Created
 
@@ -209,27 +211,10 @@ fullapi terraform destroy
 - Azure (Container Apps, Azure Database, Azure Cache, ACR)
 
 **Cost-Optimized Defaults:**
-- Small: 1 vCPU, 2GB RAM (~$10-15/month)
-- Medium: 2 vCPU, 4GB RAM (~$25-35/month)
-- Large: 4 vCPU, 8GB RAM (~$60-80/month)
+- Small: 1 vCPU, 2GB RAM ($10-15/month)
+- Medium: 2 vCPU, 4GB RAM ($25-35/month)
+- Large: 4 vCPU, 8GB RAM ($60-80/month)
 
-## Contributing
-
-1. Keep it stdlib only — no new dependencies
-2. Test your changes: `pip install -e . && fullapi new test_project --full`
-3. One feature per PR
-
-## Support
-
-- 🐛 [Report bugs](https://github.com/sahilnyk/fullapi/issues)
-- 💡 [Request features](https://github.com/sahilnyk/fullapi/issues)
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for version history.
-
-## License
-
-MIT License — see [LICENSE](LICENSE)
+---
 
 **Created by** [Sahil Nayak](https://github.com/sahilnyk)

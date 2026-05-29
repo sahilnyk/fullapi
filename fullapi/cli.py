@@ -21,6 +21,7 @@ from fullapi.terraform_ops import (
 )
 from fullapi.docker_ops import docker_build, docker_push
 from fullapi.scale_ops import scale_up, scale_down, scale_set, scale_status
+from fullapi.commands.deploy import deploy_project
 
 
 def print_banner():
@@ -183,6 +184,21 @@ Examples:
     scale_parser.add_argument("size", nargs="?", choices=["small", "medium", "large"],
                              help="Instance size (for set action)")
 
+    # 'deploy' command
+    deploy_parser = subparsers.add_parser(
+        "deploy",
+        help="Deploy project to cloud",
+        description="Deploy FastAPI project to cloud infrastructure",
+        add_help=False
+    )
+    deploy_parser.add_argument("-h", "--help", action="help", help="Show help for deploy command")
+    deploy_parser.add_argument("--cloud", required=True, choices=["aws", "gcp", "azure"],
+                              help="Cloud provider (aws, gcp, azure)")
+    deploy_parser.add_argument("--type", required=True, choices=["server", "serverless"],
+                              help="Deployment type (server, serverless)")
+    deploy_parser.add_argument("--name", required=True, help="Application name")
+    deploy_parser.add_argument("--region", default="us-east-1", help="Cloud region (default: us-east-1)")
+
     args = parser.parse_args()
     
     if args.command is None:
@@ -208,6 +224,8 @@ Examples:
         handle_docker(args)
     elif args.command == "scale":
         handle_scale(args)
+    elif args.command == "deploy":
+        handle_deploy(args)
 
 
 def handle_new(args):
@@ -418,6 +436,18 @@ def handle_scale(args):
         exit_code = 1
 
     sys.exit(exit_code)
+
+
+def handle_deploy(args):
+    """Handle the 'deploy' command."""
+    success = deploy_project(
+        project_path=Path("."),
+        cloud_provider=args.cloud,
+        deployment_type=args.type,
+        app_name=args.name,
+        region=args.region
+    )
+    sys.exit(0 if success else 1)
 
 
 if __name__ == "__main__":

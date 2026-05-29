@@ -2,6 +2,16 @@
 
 All notable changes to fullapi will be documented here.
 
+## [1.2.0] - 2026-05-30
+
+### Added
+- **Intelligent Deploy**: One-command cloud deployment with automatic infrastructure generation
+- **Codebase Analysis**: Automatic detection of project features (auth, database, caching, monitoring)
+- **AWS ECS Fargate Support**: Production-ready container orchestration with auto-generated Terraform
+- **Smart Docker Generation**: Context-aware Dockerfile and docker-compose.yml creation
+- **Infrastructure as Code**: Automatic Terraform generation based on detected project requirements
+- **Deploy Command**: `fullapi deploy` analyzes your project and generates complete deployment configuration
+
 ## [1.1.1] - 2026-05-28
 
 ### Security Fixes (CRITICAL)

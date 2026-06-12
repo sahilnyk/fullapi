@@ -4,11 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fullapi"
-version = "1.2.0"
+version = "1.2.1"
 description = "CLI tool for production-ready FastAPI projects with auth, Docker, databases, and cloud deployment"
 readme = "README.md"
 requires-python = ">=3.8"
 license = "MIT"
+dependencies = [
+    "colorama>=0.4.6",
+]
 authors = [
     {name = "Sahil Nayak"}
 ]

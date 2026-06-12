@@ -1,18 +1,36 @@
-"""Project scaffolding logic."""
+"""Project scaffolding logic with new architecture."""
 
 import shutil
 import sys
 import time
 from pathlib import Path
 from string import Template
+from datetime import datetime
 
 from fullapi.config import ProjectConfig
 from fullapi.colors import (
     ICON_CHECK, ICON_CROSS, ICON_WARNING, ICON_BOLT,
     success, error, warning, info, muted, bold, color, Style
 )
-from fullapi.templates import main_basic, router, schema, config as config_templates, requirements, alembic, redis, middleware, logging as logging_templates
-from fullapi.templates import terraform as terraform_templates
+from fullapi.templates import (
+    main_basic, router, schema,
+    requirements, alembic, redis,
+    terraform as terraform_templates
+)
+# Import new template modules
+from fullapi.templates import (
+    exceptions as exceptions_templates,
+    responses as responses_templates,
+    mixins as mixins_templates,
+    crud_base as crud_base_templates,
+    dependencies as dependencies_templates,
+    middleware_new as middleware_new_templates,
+    logging_new as logging_new_templates,
+    main_full as main_full_templates,
+    config_new as config_new_templates,
+    routers_new as routers_new_templates,
+    tests_new as tests_new_templates,
+)
 from fullapi.custom_templates import load_custom_template, CustomTemplateManager
 from fullapi.metadata import write_metadata
 from fullapi.prompt import show_loading_animation
@@ -245,157 +263,449 @@ def _show_progress(current: int, total: int, filename: str):
 
 def _collect_basic(files: list, template_vars: dict):
     """Collect files for basic mode."""
+    # Main application file
     files.append(("main.py", Template(main_basic.TEMPLATE).substitute(template_vars)))
+    
+    # Routers
+    files.append(("routers/__init__.py", ""))
     files.append(("routers/health.py", router.HEALTH_ROUTER))
+    
+    # Schemas
+    files.append(("schemas/__init__.py", ""))
     files.append(("schemas/base.py", schema.BASE_SCHEMA))
-    files.append(("core/config.py", Template(config_templates.CONFIG_BASIC).substitute(template_vars)))
+    
+    # Core configuration (new version)
+    files.append(("core/__init__.py", ""))
+    files.append(("core/config.py", Template(config_new_templates.CONFIG_BASIC).substitute(template_vars)))
+    files.append(("core/responses.py", responses_templates.RESPONSES))
+    
+    # Exceptions package
+    files.append(("exceptions/__init__.py", exceptions_templates.EXCEPTIONS_INIT))
+    files.append(("exceptions/errors.py", exceptions_templates.EXCEPTIONS_ERRORS))
+    files.append(("exceptions/handlers.py", exceptions_templates.EXCEPTIONS_HANDLERS))
+    
+    # Requirements
     files.append(("requirements.txt", requirements.BASIC))
-
-
-def _build_full_main(config: ProjectConfig, template_vars: dict) -> str:
-    """Build main.py content for full mode with proper imports."""
-    imports = ["from fastapi import FastAPI"]
-    imports.append("from routers.health import router as health_router")
-
-    routers = ['app.include_router(health_router, tags=["health"])']
-
-    if config.database != "none":
-        imports.append("from routers.users import router as users_router")
-        routers.append('app.include_router(users_router, prefix="/users", tags=["users"])')
-
-    if config.redis:
-        imports.append("from routers.redis import router as redis_router")
-        routers.append('app.include_router(redis_router, prefix="/redis", tags=["redis"])')
-
-    name = template_vars["project_name"]
-    lines = imports + ["", f'app = FastAPI(title="{name}")', ""] + routers
-    lines += ["", "", 'if __name__ == "__main__":',
-              "    import uvicorn",
-              '    uvicorn.run(app, host="0.0.0.0", port=8000)',
-              ""]
-    return "\n".join(lines)
+    
+    # Environment files
+    files.append((".env.example", "# Application\nAPP_NAME=${project_name}\nDEBUG=true\nENVIRONMENT=development\n"))
+    files.append((".gitignore", _generate_gitignore()))
 
 
 def _collect_full(files: list, config: ProjectConfig, template_vars: dict):
-    """Collect files for full mode."""
-    files.append(("main.py", _build_full_main(config, template_vars)))
+    """Collect files for full mode with new architecture."""
+    # Main application file (built dynamically)
+    main_content = main_full_templates.build_main_py(
+        project_name=template_vars["project_name"],
+        has_logging=config.logging,
+        has_middleware=config.middleware,
+        has_exceptions=True,  # Always include in full mode
+        has_database=(config.database != "none"),
+        has_redis=config.redis,
+        has_auth=config.auth,
+    )
+    files.append(("main.py", main_content))
+    
+    # Core package
+    files.append(("core/__init__.py", ""))
+    files.append(("core/config.py", Template(config_new_templates.CONFIG).substitute(template_vars)))
+    files.append(("core/responses.py", responses_templates.RESPONSES))
+    
+    # Exceptions package
+    files.append(("exceptions/__init__.py", exceptions_templates.EXCEPTIONS_INIT))
+    files.append(("exceptions/errors.py", exceptions_templates.EXCEPTIONS_ERRORS))
+    files.append(("exceptions/handlers.py", exceptions_templates.EXCEPTIONS_HANDLERS))
+    
+    # Routers
     files.append(("routers/__init__.py", ""))
-    files.append(("routers/health.py", router.HEALTH_ROUTER))
+    if config.database != "none":
+        files.append(("routers/health.py", routers_new_templates.HEALTH_ROUTER))
+    else:
+        files.append(("routers/health.py", routers_new_templates.HEALTH_ROUTER_NO_DB))
+    
+    # Schemas
     files.append(("schemas/__init__.py", ""))
     files.append(("schemas/base.py", schema.BASE_SCHEMA))
-    files.append(("core/__init__.py", ""))
-    files.append(("core/config.py", Template(config_templates.CONFIG).substitute(template_vars)))
-    files.append(("tests/test_main.py", "# TODO: Add tests\n"))
     
+    # Database-specific files
     if config.database != "none":
-        from fullapi.templates import model, crud, database, deps, alembic
+        from fullapi.templates import model, crud, database, alembic
         
-        files.append(("routers/users.py", router.USERS_ROUTER))
-        files.append(("schemas/user.py", schema.USER_SCHEMA))
-        files.append(("models/__init__.py", ""))
-        files.append(("models/user.py", model.USER_MODEL))
-        files.append(("crud/__init__.py", ""))
-        files.append(("crud/user.py", crud.USER_CRUD))
+        # Database models and mixins
         files.append(("db/__init__.py", ""))
-        files.append(("db/session.py", Template(database.DB_SESSION).substitute({"db_type": config.database})))
-        deps_content = deps.DEPS_WITH_AUTH if config.auth else deps.DEPS_NO_AUTH
-        files.append(("deps.py", deps_content))
+        files.append(("db/base.py", database.DB_BASE))
+        files.append(("db/mixins.py", mixins_templates.DB_MIXINS))
+        if config.database == "sqlite":
+            files.append(("db/session.py", database.DB_SESSION_SQLITE))
+        else:
+            files.append(("db/session.py", database.DB_SESSION_POSTGRESQL_MYSQL))
         
-        # Add Alembic migration support
+        # Models
+        files.append(("models/__init__.py", "from .user import User\n"))
+        files.append(("models/user.py", model.USER_MODEL))
+        
+        # CRUD layer
+        files.append(("crud/__init__.py", ""))
+        files.append(("crud/base.py", crud_base_templates.CRUD_BASE))
+        files.append(("crud/user.py", crud.USER_CRUD))
+        
+        # Dependencies package
+        if config.auth:
+            files.append(("dependencies/__init__.py", dependencies_templates.DEPENDENCIES_INIT_AUTH_ONLY))
+        else:
+            files.append(("dependencies/__init__.py", dependencies_templates.DEPENDENCIES_INIT_NO_AUTH))
+        files.append(("dependencies/db.py", dependencies_templates.DEPENDENCIES_DB))
+        
+        # Auth-specific dependencies
+        if config.auth:
+            files.append(("dependencies/auth.py", dependencies_templates.DEPENDENCIES_AUTH))
+        
+        # User router and schema
+        if config.auth:
+            files.append(("routers/users.py", routers_new_templates.USERS_ROUTER))
+        else:
+            files.append(("routers/users.py", routers_new_templates.USERS_ROUTER_NO_AUTH))
+        files.append(("schemas/user.py", schema.USER_SCHEMA))
+        
+        # Auth router
+        if config.auth:
+            files.append(("routers/auth.py", routers_new_templates.AUTH_ROUTER))
+            files.append(("schemas/auth.py", _generate_auth_schema()))
+        
+        # Alembic migration support
         db_url = _get_database_url(config.database)
         files.append(("alembic.ini", Template(alembic.ALEMBIC_INI).substitute({"database_url": db_url})))
         files.append(("alembic/env.py", alembic.ENV_PY))
         files.append(("alembic/script.py.mako", alembic.SCRIPT_PY_MAKO))
         files.append(("alembic/versions/__init__.py", ""))
         
-        # Add initial migration
-        import datetime
-        create_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # Initial migration
+        create_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         initial_migration = Template(alembic.INITIAL_MIGRATION).substitute({"create_date": create_date})
         files.append(("alembic/versions/001_initial_migration.py", initial_migration))
+    else:
+        # No database - simple dependencies
+        files.append(("dependencies/__init__.py", '"""Dependencies package."""\n'))
     
+    # Security module
     if config.auth:
         from fullapi.templates import security
         files.append(("core/security.py", security.SECURITY))
     
+    # Redis support
     if config.redis:
         files.append(("core/redis_config.py", redis.REDIS_CONFIG))
         files.append(("core/redis_utils.py", redis.REDIS_UTILS))
-        files.append(("routers/redis.py", redis.REDIS_ROUTER))
-        files.append(("deps_redis.py", redis.REDIS_DEPS))
+        files.append(("routers/redis.py", routers_new_templates.REDIS_ROUTER))
+        files.append(("dependencies/cache.py", dependencies_templates.DEPENDENCIES_CACHE))
+        
+        # Update dependencies __init__.py to include cache
+        if config.database != "none":
+            if config.auth:
+                files.append(("dependencies/__init__.py", dependencies_templates.DEPENDENCIES_INIT))
+            else:
+                files.append(("dependencies/__init__.py", dependencies_templates.DEPENDENCIES_INIT_REDIS_ONLY))
     
+    # Middleware (new structure)
     if config.middleware:
-        files.append(("core/middleware_config.py", middleware.MIDDLEWARE_CONFIG))
-        files.append(("core/middleware_cors.py", middleware.MIDDLEWARE_CORS))
-        files.append(("core/middleware_rate_limit.py", middleware.MIDDLEWARE_RATE_LIMIT))
-        files.append(("core/middleware_security.py", middleware.MIDDLEWARE_SECURITY))
-        files.append(("core/middleware_gzip.py", middleware.MIDDLEWARE_GZIP))
-        files.append(("core/middleware_logging.py", middleware.MIDDLEWARE_LOGGING))
-        files.append(("core/middleware_trusted_proxy.py", middleware.MIDDLEWARE_TRUSTED_PROXY))
-        files.append(("core/middleware_setup.py", middleware.MIDDLEWARE_SETUP))
-        files.append(("main_with_middleware.py", middleware.MIDDLEWARE_MAIN))
+        files.append(("core/middleware/__init__.py", middleware_new_templates.MIDDLEWARE_INIT))
+        files.append(("core/middleware/config.py", middleware_new_templates.MIDDLEWARE_CONFIG))
+        files.append(("core/middleware/cors.py", middleware_new_templates.MIDDLEWARE_CORS))
+        files.append(("core/middleware/rate_limit.py", middleware_new_templates.MIDDLEWARE_RATE_LIMIT))
+        files.append(("core/middleware/security_headers.py", middleware_new_templates.MIDDLEWARE_SECURITY_HEADERS))
+        files.append(("core/middleware/gzip.py", middleware_new_templates.MIDDLEWARE_GZIP))
+        files.append(("core/middleware/request_id.py", middleware_new_templates.MIDDLEWARE_REQUEST_ID))
+        files.append(("core/middleware/request_logging.py", middleware_new_templates.MIDDLEWARE_REQUEST_LOGGING))
+        files.append(("core/middleware/setup.py", middleware_new_templates.MIDDLEWARE_SETUP))
     
+    # Logging (new structure)
     if config.logging:
-        files.append(("core/logging_config.py", logging_templates.LOGGING_CONFIG))
-        files.append(("core/logging_setup.py", logging_templates.LOGGING_SETUP))
+        files.append(("core/logging/__init__.py", logging_new_templates.LOGGING_INIT))
+        files.append(("core/logging/config.py", logging_new_templates.LOGGING_CONFIG))
+        files.append(("core/logging/formatters.py", logging_new_templates.LOGGING_FORMATTERS))
+        files.append(("core/logging/setup.py", logging_new_templates.LOGGING_SETUP))
     
-    # Build requirements as a set to avoid duplicates
+    # Tests
+    files.append(("tests/__init__.py", tests_new_templates.TESTS_INIT))
+    if config.database != "none" and config.auth:
+        files.append(("tests/conftest.py", tests_new_templates.CONFTEST))
+    elif config.database != "none":
+        files.append(("tests/conftest.py", tests_new_templates.CONFTEST_NO_AUTH))
+    else:
+        files.append(("tests/conftest.py", tests_new_templates.CONFTEST_SIMPLE))
+    if config.database != "none":
+        files.append(("tests/test_health.py", tests_new_templates.TEST_HEALTH))
+    else:
+        files.append(("tests/test_health.py", tests_new_templates.TEST_HEALTH_SIMPLE))
+    if config.database != "none":
+        if config.auth:
+            files.append(("tests/test_users.py", tests_new_templates.TEST_USERS))
+        else:
+            files.append(("tests/test_users.py", tests_new_templates.TEST_USERS_NO_AUTH))
+        if config.auth:
+            files.append(("tests/test_auth.py", tests_new_templates.TEST_AUTH))
+    
+    # Build requirements
+    files.append(("requirements.txt", _build_requirements(config)))
+    
+    # Environment files
+    files.append((".env.example", _generate_env_example(config, template_vars)))
+    files.append((".gitignore", _generate_gitignore()))
+    
+    # Docker support
+    if config.docker:
+        from fullapi.templates import dockerfile, dockercompose
+        files.append(("Dockerfile", dockerfile.DOCKERFILE))
+        if config.redis:
+            files.append(("docker-compose.yml", dockercompose.DOCKERCOMPOSE_WITH_REDIS))
+        else:
+            files.append(("docker-compose.yml", dockercompose.DOCKERCOMPOSE))
+
+
+def _build_requirements(config: ProjectConfig) -> str:
+    """Build requirements.txt based on configuration."""
+    from fullapi.templates import alembic
+    
     req_lines = set()
 
     # Add base requirements
     for line in requirements.FULL_BASE.strip().split('\n'):
-        if line.strip():
+        if line.strip() and not line.strip().startswith('#'):
             req_lines.add(line.strip())
 
     # Add database-specific requirements
     if config.database == "postgresql":
         for line in requirements.FULL_POSTGRESQL.strip().split('\n'):
-            if line.strip():
+            if line.strip() and not line.strip().startswith('#'):
                 req_lines.add(line.strip())
     elif config.database == "mysql":
         for line in requirements.FULL_MYSQL.strip().split('\n'):
-            if line.strip():
+            if line.strip() and not line.strip().startswith('#'):
                 req_lines.add(line.strip())
 
     # Add auth requirements
     if config.auth:
         for line in requirements.FULL_AUTH.strip().split('\n'):
-            if line.strip():
+            if line.strip() and not line.strip().startswith('#'):
                 req_lines.add(line.strip())
 
     # Add alembic requirements
     if config.database != "none":
         for line in alembic.REQUIREMENTS_ALEMBIC.strip().split('\n'):
-            if line.strip():
+            if line.strip() and not line.strip().startswith('#'):
                 req_lines.add(line.strip())
 
     # Add redis requirements
     if config.redis:
         for line in redis.REQUIREMENTS_REDIS.strip().split('\n'):
-            if line.strip():
+            if line.strip() and not line.strip().startswith('#'):
                 req_lines.add(line.strip())
 
     # Add middleware requirements
     if config.middleware:
-        for line in middleware.REQUIREMENTS_MIDDLEWARE.strip().split('\n'):
-            if line.strip():
+        for line in middleware_new_templates.REQUIREMENTS_MIDDLEWARE.strip().split('\n'):
+            if line.strip() and not line.strip().startswith('#'):
                 req_lines.add(line.strip())
 
-    # Add logging requirements (if any)
-    if config.logging and hasattr(logging_templates, 'REQUIREMENTS_LOGGING'):
-        for line in logging_templates.REQUIREMENTS_LOGGING.strip().split('\n'):
-            if line.strip():
+    # Add logging requirements
+    if config.logging and hasattr(logging_new_templates, 'REQUIREMENTS_LOGGING'):
+        for line in logging_new_templates.REQUIREMENTS_LOGGING.strip().split('\n'):
+            if line.strip() and not line.strip().startswith('#'):
                 req_lines.add(line.strip())
 
-    # Sort and join, filtering out comments
-    req_lines = {line for line in req_lines if not line.startswith('#')}
+    # Sort and join
     req_content = '\n'.join(sorted(req_lines)) + '\n'
-    files.append(("requirements.txt", req_content))
+    return req_content
+
+
+def _generate_env_example(config: ProjectConfig, template_vars: dict) -> str:
+    """Generate .env.example file based on configuration."""
+    lines = [
+        "# Application",
+        f"APP_NAME={template_vars['project_name']}",
+        "APP_VERSION=1.0.0",
+        "DEBUG=true",
+        "ENVIRONMENT=development",
+        "",
+    ]
     
-    from fullapi.templates import env
-    files.append((".env.example", env.ENV_EXAMPLE))
+    if config.database != "none":
+        lines.extend([
+            "# Database",
+            f"DATABASE_URL={_get_database_url(config.database)}",
+            "DB_POOL_SIZE=5",
+            "DB_MAX_OVERFLOW=10",
+            "DB_POOL_TIMEOUT=30",
+            "",
+        ])
     
-    if config.docker:
-        from fullapi.templates import dockerfile, dockercompose
-        files.append(("Dockerfile", dockerfile.DOCKERFILE))
-        files.append(("docker-compose.yml", dockercompose.DOCKERCOMPOSE))
+    if config.auth:
+        lines.extend([
+            "# JWT Authentication",
+            "SECRET_KEY=your-secret-key-change-in-production",
+            "ALGORITHM=HS256",
+            "ACCESS_TOKEN_EXPIRE_MINUTES=30",
+            "REFRESH_TOKEN_EXPIRE_DAYS=7",
+            "",
+        ])
+    
+    if config.middleware:
+        lines.extend([
+            "# CORS",
+            "CORS_ORIGINS=http://localhost:3000,http://localhost:8000",
+            "CORS_ALLOW_CREDENTIALS=true",
+            "",
+            "# Rate Limiting",
+            "RATE_LIMIT_ENABLED=false",
+            "RATE_LIMIT_REQUESTS=100",
+            "RATE_LIMIT_WINDOW=60",
+            "",
+            "# Security Headers",
+            "SECURITY_HEADERS_ENABLED=true",
+            "",
+            "# Gzip Compression",
+            "GZIP_ENABLED=true",
+            "GZIP_MINIMUM_SIZE=1000",
+            "",
+            "# Request ID",
+            "REQUEST_ID_ENABLED=true",
+            "REQUEST_ID_HEADER=X-Request-ID",
+            "",
+            "# Request Logging",
+            "REQUEST_LOGGING_ENABLED=false",
+            "REQUEST_LOGGING_FORMAT=%(asctime)s - %(levelname)s - %(message)s",
+            "",
+        ])
+    
+    if config.redis:
+        lines.extend([
+            "# Redis",
+            "REDIS_URL=redis://localhost:6379/0",
+            "REDIS_ENABLED=true",
+            "",
+        ])
+    
+    if config.logging:
+        lines.extend([
+            "# Logging",
+            "LOG_LEVEL=INFO",
+            "LOG_FILE_PATH=logs/app.log",
+            "",
+        ])
+    
+    return "\n".join(lines)
+
+
+def _generate_gitignore() -> str:
+    """Generate comprehensive .gitignore file."""
+    return """# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker
+.docker/
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+*.tfvars
+!terraform.tfvars.example
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+"""
+
+
+def _generate_auth_schema() -> str:
+    """Generate auth schema file."""
+    return '''"""Authentication schemas."""
+
+from pydantic import BaseModel, Field
+from typing import Optional
+
+
+class TokenResponse(BaseModel):
+    """Token response schema."""
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+
+
+class TokenRefresh(BaseModel):
+    """Token refresh request schema."""
+    refresh_token: str = Field(..., description="Refresh token to renew access token")
+
+
+class TokenPayload(BaseModel):
+    """Token payload schema (internal use)."""
+    sub: str
+    exp: int
+    type: str = "access"
+'''

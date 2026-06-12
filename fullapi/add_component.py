@@ -10,7 +10,7 @@ from fullapi.colors import (
     success, error, warning, info, muted, bold, color, Style
 )
 from fullapi.prompt import show_loading_animation
-from fullapi.templates import router, schema, model, crud
+
 
 
 def add_component_to_project(component_type: str, component_name: str) -> None:

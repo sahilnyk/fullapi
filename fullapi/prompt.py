@@ -53,14 +53,6 @@ def prompt_config(project_name: str) -> ProjectConfig:
     auth = auth == 1
     print()
     
-    docker = _prompt_choice(
-        "Docker",
-        ["Skip Docker",
-         "Add Docker files"]
-    )
-    docker = docker == 1
-    print()
-    
     redis = _prompt_choice(
         "Redis Caching",
         ["Skip Redis",
@@ -83,6 +75,14 @@ def prompt_config(project_name: str) -> ProjectConfig:
          "Add Logging"]
     )
     logging = logging == 1
+    print()
+    
+    docker = _prompt_choice(
+        "Docker",
+        ["Skip Docker",
+         "Add Docker files"]
+    )
+    docker = docker == 1
     print()
 
     terraform = _prompt_choice(

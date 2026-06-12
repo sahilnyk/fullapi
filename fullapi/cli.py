@@ -4,6 +4,12 @@ import argparse
 import sys
 from pathlib import Path
 
+try:
+    import colorama
+    colorama.init(autoreset=True, strip=False)
+except ImportError:
+    pass
+
 from fullapi import __version__
 from fullapi.colors import (
     ICON_ARROW, ICON_BOLT, ICON_CROSS,

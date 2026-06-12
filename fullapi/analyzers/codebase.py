@@ -6,6 +6,8 @@ from typing import Dict, List, Optional
 from pathlib import Path
 from fullapi.analyzers.docker_parser import parse_dockerfile, parse_docker_compose
 
+DEFAULT_PORT = 8000
+
 
 @dataclass
 class CodebaseAnalysis:
@@ -127,8 +129,8 @@ class CodebaseAnalyzer:
             if port_match:
                 return int(port_match.group(1))
 
-        # Default: 8000
-        return 8000
+        # Default: DEFAULT_PORT
+        return DEFAULT_PORT
 
     def _detect_health_check(self) -> str:
         """Detect health check endpoint from code."""

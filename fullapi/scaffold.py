@@ -14,10 +14,7 @@ from fullapi.colors import (
 from fullapi.templates import (
     main_basic, router, schema,
     requirements, alembic, redis,
-    terraform as terraform_templates
-)
-# Import new template modules
-from fullapi.templates import (
+    terraform as terraform_templates,
     exceptions as exceptions_templates,
     responses as responses_templates,
     mixins as mixins_templates,
@@ -34,17 +31,19 @@ from fullapi.custom_templates import load_custom_template
 from fullapi.metadata import write_metadata
 from fullapi.prompt import show_loading_animation
 
+DEFAULT_PORT = 8000
+DEFAULT_DB_URLS = {
+    "sqlite": "sqlite:///./app.db",
+    "postgresql": "postgresql://user:password@localhost:5432/app",
+    "mysql": "mysql+pymysql://root:password@localhost:3306/app",
+}
+DEFAULT_REDIS_URL = "redis://localhost:6379/0"
+DEFAULT_CORS_ORIGINS = f"http://localhost:3000,http://localhost:{DEFAULT_PORT}"
+
 
 def _get_database_url(db_type: str) -> str:
     """Get database URL for Alembic configuration."""
-    if db_type == "sqlite":
-        return "sqlite:///./app.db"
-    elif db_type == "postgresql":
-        return "postgresql://user:password@localhost:5432/app"
-    elif db_type == "mysql":
-        return "mysql+pymysql://root:password@localhost:3306/app"
-    else:
-        return "sqlite:///./app.db"
+    return DEFAULT_DB_URLS.get(db_type, DEFAULT_DB_URLS["sqlite"])
 
 
 def _scaffold_with_custom_template(config: ProjectConfig, project_path: Path) -> None:
@@ -100,7 +99,7 @@ def _scaffold_with_custom_template(config: ProjectConfig, project_path: Path) ->
     print(f"    {color('pip install -r', Style.CYAN)} requirements.txt")
     print(f"    {color('uvicorn', Style.CYAN)} main:app --reload")
     print()
-    docs_msg = muted('Docs: http://localhost:8000/docs')
+    docs_msg = muted(f'Docs: http://localhost:{DEFAULT_PORT}/docs')
     print(f"  {docs_msg}")
     print()
 
@@ -185,7 +184,7 @@ def scaffold_project(config: ProjectConfig) -> None:
         print(f"    {color('fullapi terraform plan', Style.CYAN)}")
     print(f"    {color('uvicorn', Style.CYAN)} main:app --reload")
     print()
-    print(f"  {muted('Docs:')} http://localhost:8000/docs")
+    print(f"  {muted('Docs:')} http://localhost:{DEFAULT_PORT}/docs")
     print()
 
 
@@ -540,7 +539,7 @@ def _generate_env_example(config: ProjectConfig, template_vars: dict) -> str:
     if config.auth:
         lines.extend([
             "# JWT Authentication",
-            "SECRET_KEY=your-secret-key-change-in-production",
+            "SECRET_KEY=CHANGE_ME_GENERATE_RANDOM_SECRET_KEY",
             "ALGORITHM=HS256",
             "ACCESS_TOKEN_EXPIRE_MINUTES=30",
             "REFRESH_TOKEN_EXPIRE_DAYS=7",
@@ -550,7 +549,7 @@ def _generate_env_example(config: ProjectConfig, template_vars: dict) -> str:
     if config.middleware:
         lines.extend([
             "# CORS",
-            "CORS_ORIGINS=http://localhost:3000,http://localhost:8000",
+            f"CORS_ORIGINS={DEFAULT_CORS_ORIGINS}",
             "CORS_ALLOW_CREDENTIALS=true",
             "",
             "# Rate Limiting",
@@ -578,7 +577,7 @@ def _generate_env_example(config: ProjectConfig, template_vars: dict) -> str:
     if config.redis:
         lines.extend([
             "# Redis",
-            "REDIS_URL=redis://localhost:6379/0",
+            f"REDIS_URL={DEFAULT_REDIS_URL}",
             "REDIS_ENABLED=true",
             "",
         ])

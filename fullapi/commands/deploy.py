@@ -83,15 +83,15 @@ def deploy_project(
         terraform_dir = project_path / "terraform"
         applier = TerraformApplier(terraform_dir)
 
-        print(f"    Initializing Terraform...")
+        print("    Initializing Terraform...")
         applier.init()
         print(f"  {ICON_CHECK}  Terraform initialized")
 
-        print(f"    Planning changes...")
+        print("    Planning changes...")
         applier.plan()
         print(f"  {ICON_CHECK}  Plan complete")
 
-        print(f"    Applying changes...")
+        print("    Applying changes...")
         applier.apply()
         print(f"  {ICON_CHECK}  Infrastructure deployed")
 

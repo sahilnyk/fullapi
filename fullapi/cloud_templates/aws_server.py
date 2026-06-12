@@ -94,7 +94,7 @@ class AWSServerTemplate:
         lines = [
             f"project_name       = \"{self.project_name}\"",
             f"region             = \"{self.region}\"",
-            f"environment        = \"dev\"",
+            "environment        = \"dev\"",
             f"image_uri          = \"{image_uri}\"",
             f"container_port     = {port}",
             f"health_check_path  = \"{health_check}\"",
@@ -125,9 +125,9 @@ class AWSServerTemplate:
 }'''
 
     def _provider_block(self) -> str:
-        return f'''provider "aws" {{
+        return '''provider "aws" {
   region = var.region
-}}'''
+}'''
 
     def _vpc_block(self) -> str:
         return '''# VPC and Networking

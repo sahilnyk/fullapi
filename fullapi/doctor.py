@@ -5,7 +5,7 @@ from pathlib import Path
 
 from fullapi.colors import (
     ICON_CHECK, ICON_CROSS, ICON_WARNING,
-    success, error, warning, info, muted, bold, color, Style
+    success, error, warning, info, bold
 )
 from fullapi.metadata import read_metadata
 

@@ -1,7 +1,6 @@
 """Terraform file generator."""
 
 from pathlib import Path
-from typing import Optional
 
 from fullapi.cloud_templates.aws_server import AWSServerTemplate
 from fullapi.deployers.planner import DeploymentSpec

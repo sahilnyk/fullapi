@@ -9,8 +9,7 @@ from datetime import datetime
 
 from fullapi.config import ProjectConfig
 from fullapi.colors import (
-    ICON_CHECK, ICON_CROSS, ICON_WARNING, ICON_BOLT,
-    success, error, warning, info, muted, bold, color, Style
+    ICON_CHECK, ICON_CROSS, ICON_WARNING, success, error, warning, info, muted, bold, color, Style
 )
 from fullapi.templates import (
     main_basic, router, schema,
@@ -31,7 +30,7 @@ from fullapi.templates import (
     routers_new as routers_new_templates,
     tests_new as tests_new_templates,
 )
-from fullapi.custom_templates import load_custom_template, CustomTemplateManager
+from fullapi.custom_templates import load_custom_template
 from fullapi.metadata import write_metadata
 from fullapi.prompt import show_loading_animation
 
@@ -464,7 +463,6 @@ def _collect_full(files: list, config: ProjectConfig, template_vars: dict):
 
 def _build_requirements(config: ProjectConfig) -> str:
     """Build requirements.txt based on configuration."""
-    from fullapi.templates import alembic
     
     req_lines = set()
 

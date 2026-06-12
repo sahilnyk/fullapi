@@ -1,7 +1,6 @@
 """Docker build and push operations."""
 
 import subprocess
-import sys
 import json
 from pathlib import Path
 
@@ -42,7 +41,7 @@ def _get_project_metadata() -> dict:
 
     try:
         return json.loads(metadata_path.read_text())
-    except:
+    except Exception:
         return {}
 
 
@@ -66,7 +65,7 @@ def docker_build():
 
     if not dockerfile.exists():
         print(f"{color('[ERROR]', Style.RED)} No Dockerfile found")
-        print(f"Enable Docker when creating project: fullapi new myapi --docker")
+        print("Enable Docker when creating project: fullapi new myapi --docker")
         return 1
 
     metadata = _get_project_metadata()
@@ -90,8 +89,8 @@ def docker_build():
         print()
         print(f"{color('[OK]', Style.GREEN)} Image built: {image_tag}")
         print()
-        print(f"Next steps:")
-        print(f"  fullapi docker push")
+        print("Next steps:")
+        print("  fullapi docker push")
     else:
         print(f"{color('[ERROR]', Style.RED)} Build failed")
 
@@ -112,7 +111,7 @@ def docker_push():
 
     if not cloud_provider or not region:
         print(f"{color('[ERROR]', Style.RED)} Terraform not configured")
-        print(f"Create project with --terraform flag")
+        print("Create project with --terraform flag")
         return 1
 
     commit = _get_git_commit()
@@ -129,7 +128,7 @@ def docker_push():
     exit_code, _ = _run_command(["docker", "image", "inspect", local_tag])
     if exit_code != 0:
         print(f"{color('[ERROR]', Style.RED)} Image not found: {local_tag}")
-        print(f"Build it first: fullapi docker build")
+        print("Build it first: fullapi docker build")
         return 1
 
     # Authenticate based on cloud provider
@@ -153,11 +152,11 @@ def docker_push():
         print()
         print(f"{color('[OK]', Style.GREEN)} Image pushed: {remote_tag}")
         print()
-        print(f"Update terraform.tfvars:")
+        print("Update terraform.tfvars:")
         print(f'  container_image_uri = "{remote_tag}"')
         print()
-        print(f"Then deploy:")
-        print(f"  fullapi terraform apply")
+        print("Then deploy:")
+        print("  fullapi terraform apply")
 
         # Update terraform.tfvars if it exists
         _update_tfvars(remote_tag)
@@ -170,14 +169,14 @@ def docker_push():
 def _authenticate_registry(cloud_provider: str, region: str) -> int:
     """Authenticate with cloud registry."""
     if cloud_provider == "aws":
-        print(f"  Authenticating with ECR...")
+        print("  Authenticating with ECR...")
         exit_code, password = _run_command([
             "aws", "ecr", "get-login-password",
             "--region", region
         ])
         if exit_code != 0:
             print(f"{color('[ERROR]', Style.RED)} AWS CLI authentication failed")
-            print(f"Run: aws configure")
+            print("Run: aws configure")
             return exit_code
 
         exit_code, _ = _run_command([
@@ -189,25 +188,25 @@ def _authenticate_registry(cloud_provider: str, region: str) -> int:
         return exit_code
 
     elif cloud_provider == "gcp":
-        print(f"  Authenticating with GCR...")
+        print("  Authenticating with GCR...")
         exit_code, _ = _run_command([
             "gcloud", "auth", "configure-docker",
             f"{region}-docker.pkg.dev"
         ])
         if exit_code != 0:
             print(f"{color('[ERROR]', Style.RED)} GCloud authentication failed")
-            print(f"Run: gcloud auth login")
+            print("Run: gcloud auth login")
         return exit_code
 
     elif cloud_provider == "azure":
-        print(f"  Authenticating with ACR...")
+        print("  Authenticating with ACR...")
         exit_code, _ = _run_command([
             "az", "acr", "login",
             "--name", "<REGISTRY_NAME>"
         ])
         if exit_code != 0:
             print(f"{color('[ERROR]', Style.RED)} Azure CLI authentication failed")
-            print(f"Run: az login")
+            print("Run: az login")
         return exit_code
 
     return 0

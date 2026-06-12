@@ -12,8 +12,8 @@ except ImportError:
 
 from fullapi import __version__
 from fullapi.colors import (
-    ICON_ARROW, ICON_BOLT, ICON_CROSS,
-    error, info, muted, success, bold, color, Style
+    ICON_BOLT, ICON_CROSS,
+    error, info, muted, bold, color, Style
 )
 from fullapi.config import ProjectConfig
 from fullapi.prompt import prompt_config
@@ -244,7 +244,7 @@ def handle_new(args):
         print(f"  {muted('Examples:')}")
         print(f"    fullapi new my_api          {muted('# Interactive mode')}")
         print(f"    fullapi new my_api --basic    {muted('# Basic mode')}")
-        print(f"    fullapi new my_api --full --db postgresql --auth --docker")
+        print("    fullapi new my_api --full --db postgresql --auth --docker")
         print()
         sys.exit(1)
     
@@ -341,8 +341,8 @@ def handle_add(args):
         print(f"  {ICON_CROSS}  {error('Not in a valid fullapi project directory')}")
         print()
         print(f"  {info('Requirements:')}")
-        print(f"    • main.py file must exist")
-        print(f"    • Run from project root directory")
+        print("    • main.py file must exist")
+        print("    • Run from project root directory")
         print()
         sys.exit(1)
     

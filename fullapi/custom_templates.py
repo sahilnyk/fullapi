@@ -1,10 +1,8 @@
 """Custom template loader and manager."""
 
-import os
 import shutil
 from pathlib import Path
 from typing import Dict, Optional
-from string import Template
 
 from fullapi.colors import warning, info, error
 
@@ -29,7 +27,7 @@ class CustomTemplateManager:
                 content = template_file.read_text()
                 self.templates[template_name] = content
             except Exception as e:
-                print(f"{warning(f'Warning:')} Could not load template {template_name}: {e}")
+                print(f"{warning('Warning:')} Could not load template {template_name}: {e}")
     
     def get_template(self, name: str) -> Optional[str]:
         """Get a specific template by name."""
@@ -69,7 +67,7 @@ class CustomTemplateManager:
                     content = file_path.read_text()
                     template_files[str(relative_path)] = content
                 except Exception as e:
-                    print(f"{warning(f'Warning:')} Could not read {relative_path}: {e}")
+                    print(f"{warning('Warning:')} Could not read {relative_path}: {e}")
         
         return template_files
 
@@ -122,23 +120,23 @@ def create_template_from_project(project_path: str, output_path: str) -> bool:
 def list_available_templates() -> None:
     """List available built-in template information."""
     print(f"{info('Built-in templates:')}")
-    print(f"  • Basic mode: Minimal FastAPI structure")
-    print(f"  • Full mode: Complete production structure")
+    print("  • Basic mode: Minimal FastAPI structure")
+    print("  • Full mode: Complete production structure")
     print()
     print(f"{info('Custom templates:')}")
-    print(f"  Use --template /path/to/templates to specify custom templates")
+    print("  Use --template /path/to/templates to specify custom templates")
     print()
     print(f"{info('Template structure:')}")
-    print(f"  • main.py: Main FastAPI application")
-    print(f"  • requirements.txt: Project dependencies")
-    print(f"  • routers/: API router files")
-    print(f"  • models/: Database model files")
-    print(f"  • schemas/: Pydantic schema files")
-    print(f"  • crud/: CRUD operation files")
-    print(f"  • core/: Core configuration files")
-    print(f"  • db/: Database configuration files")
-    print(f"  • tests/: Test files")
-    print(f"  • Dockerfile: Docker configuration (optional)")
-    print(f"  • docker-compose.yml: Docker Compose (optional)")
-    print(f"  • alembic/: Database migration files (optional)")
-    print(f"  • .env.example: Environment variables example (optional)")
+    print("  • main.py: Main FastAPI application")
+    print("  • requirements.txt: Project dependencies")
+    print("  • routers/: API router files")
+    print("  • models/: Database model files")
+    print("  • schemas/: Pydantic schema files")
+    print("  • crud/: CRUD operation files")
+    print("  • core/: Core configuration files")
+    print("  • db/: Database configuration files")
+    print("  • tests/: Test files")
+    print("  • Dockerfile: Docker configuration (optional)")
+    print("  • docker-compose.yml: Docker Compose (optional)")
+    print("  • alembic/: Database migration files (optional)")
+    print("  • .env.example: Environment variables example (optional)")

@@ -1,7 +1,6 @@
 """Test Terraform infrastructure support."""
 
 import tempfile
-import shutil
 from pathlib import Path
 
 from fullapi.config import ProjectConfig

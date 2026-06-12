@@ -5,11 +5,11 @@ import tempfile
 import shutil
 from pathlib import Path
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from fullapi.add_component import add_component_to_project
 from fullapi.cli import handle_add
-from fullapi.colors import error, warning, success
+from fullapi.colors import warning
 
 
 class TestAddComponent:
@@ -175,7 +175,7 @@ Base = declarative_base()
         """Test adding component to non-fullapi project."""
         # Don't create any project files
         
-        with patch('fullapi.add_component.print') as mock_print:
+        with patch('fullapi.add_component.print'):
             with pytest.raises(SystemExit):
                 from fullapi.cli import handle_add
                 from argparse import Namespace
@@ -237,7 +237,6 @@ class TestCLIIntegration:
         self.create_basic_project()
         
         from argparse import Namespace
-        from fullapi.cli import handle_add
         
         with patch('fullapi.add_component.add_component_to_project') as mock_add:
             args = Namespace(component_type="router", component_name="Product")

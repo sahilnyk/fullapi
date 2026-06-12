@@ -5,7 +5,7 @@ import subprocess
 from pathlib import Path
 from typing import Optional
 
-from fullapi.colors import ICON_CHECK, ICON_CROSS, color, error, info, Style
+from fullapi.colors import ICON_CHECK, ICON_CROSS, error, info
 
 
 class DockerBuilder:
@@ -110,7 +110,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "{port}"]
         repo_name = self.project_name
 
         # Create ECR repository if not exists
-        print(f"    Creating ECR repository...")
+        print("    Creating ECR repository...")
         subprocess.run(
             ["aws", "ecr", "create-repository",
              "--repository-name", repo_name,
@@ -120,7 +120,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "{port}"]
         # Ignore error if repository already exists
 
         # Authenticate Docker to ECR
-        print(f"    Authenticating...")
+        print("    Authenticating...")
         result = subprocess.run(
             ["aws", "ecr", "get-login-password", "--region", self.region],
             capture_output=True,
@@ -160,7 +160,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "{port}"]
             return None
 
         # Push to ECR
-        print(f"    Pushing image...")
+        print("    Pushing image...")
         result = subprocess.run(
             ["docker", "push", remote_tag],
             capture_output=True,

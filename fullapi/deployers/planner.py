@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
 from fullapi.analyzers.codebase import CodebaseAnalysis
-from fullapi.colors import ICON_CHECK, bold, color, muted, Style
+from fullapi.colors import ICON_CHECK, bold
 
 
 @dataclass
@@ -134,7 +134,7 @@ class DeploymentPlanner:
             print(f"    Database: RDS {db_type} {db_version}")
 
         if self.analysis.redis:
-            print(f"    Cache: ElastiCache Redis")
+            print("    Cache: ElastiCache Redis")
 
         if self.analysis.secrets:
             print(f"    Secrets: AWS Secrets Manager ({len(self.analysis.secrets)} secrets)")

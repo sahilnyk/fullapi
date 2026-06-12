@@ -32,7 +32,7 @@ def _get_current_size() -> str:
                 if len(parts) == 2:
                     value = parts[1].strip().strip('"').strip("'")
                     return value
-    except:
+    except Exception:
         pass
 
     return None
@@ -58,7 +58,7 @@ def _update_size(new_size: str) -> bool:
 
         tfvars_path.write_text('\n'.join(updated_lines))
         return True
-    except:
+    except Exception:
         return False
 
 
@@ -73,7 +73,7 @@ def _run_terraform_apply() -> int:
             check=False
         )
         return result.returncode
-    except:
+    except Exception:
         return 1
 
 
@@ -83,7 +83,7 @@ def scale_up():
 
     if not terraform_dir.exists():
         print(f"{color('[ERROR]', Style.RED)} No terraform/ directory found")
-        print(f"Create project with --terraform flag")
+        print("Create project with --terraform flag")
         return 1
 
     current = _get_current_size()
@@ -110,7 +110,7 @@ def scale_down():
 
     if not terraform_dir.exists():
         print(f"{color('[ERROR]', Style.RED)} No terraform/ directory found")
-        print(f"Create project with --terraform flag")
+        print("Create project with --terraform flag")
         return 1
 
     current = _get_current_size()
@@ -137,7 +137,7 @@ def scale_set(size: str):
 
     if not terraform_dir.exists():
         print(f"{color('[ERROR]', Style.RED)} No terraform/ directory found")
-        print(f"Create project with --terraform flag")
+        print("Create project with --terraform flag")
         return 1
 
     if size not in SIZE_TIERS:
@@ -210,9 +210,9 @@ def _scale_to(current: str, new_size: str) -> int:
     print(f"{color('[INFO]', Style.CYAN)} Cost change: {cost_sign}${abs(cost_diff):.0f}/month")
     print()
     print("This will:")
-    print(f"  - Update instance_size variable")
-    print(f"  - Run terraform apply")
-    print(f"  - Restart containers with new resources")
+    print("  - Update instance_size variable")
+    print("  - Run terraform apply")
+    print("  - Restart containers with new resources")
     print()
 
     response = input("Continue? (y/n): ").strip().lower()

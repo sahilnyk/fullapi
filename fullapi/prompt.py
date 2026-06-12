@@ -5,9 +5,8 @@ import sys
 import tty
 import termios
 import time
-import os
 from fullapi.colors import (
-    error, info, muted, bold, color, Style
+    info, muted, bold, color, Style
 )
 from fullapi.config import ProjectConfig
 

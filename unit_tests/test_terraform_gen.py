@@ -1,6 +1,5 @@
 """Tests for Terraform file generation."""
 
-from pathlib import Path
 from fullapi.deployers.terraform_gen import TerraformGenerator
 from fullapi.deployers.planner import DeploymentSpec
 

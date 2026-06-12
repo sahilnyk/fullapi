@@ -1,13 +1,11 @@
 """Add components to existing fullapi projects."""
 
-import os
-import sys
 from pathlib import Path
 from string import Template
 
 from fullapi.colors import (
-    ICON_CHECK, ICON_CROSS, ICON_WARNING,
-    success, error, warning, info, muted, bold, color, Style
+    ICON_CHECK, ICON_WARNING,
+    success, warning, info, muted, bold, color, Style
 )
 from fullapi.prompt import show_loading_animation
 
@@ -41,7 +39,7 @@ def _add_router(name: str) -> None:
         try:
             config = json.loads(config_path.read_text())
             has_db = config.get("database", "none") != "none"
-        except:
+        except Exception:
             pass
 
     # If no config, check if db/ directory exists

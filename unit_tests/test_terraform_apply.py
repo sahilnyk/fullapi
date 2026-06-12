@@ -1,7 +1,7 @@
 """Tests for Terraform applier."""
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 import subprocess
 import pytest
 

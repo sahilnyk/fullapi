@@ -2,7 +2,7 @@
 
 import subprocess
 from pathlib import Path
-from unittest.mock import Mock, patch, call
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -244,9 +244,9 @@ def test_deploy_project_default_values():
     """Test deploy_project with default parameter values."""
     with patch('fullapi.commands.deploy.CodebaseAnalyzer') as mock_analyzer, \
          patch('fullapi.commands.deploy.DeploymentPlanner') as mock_planner, \
-         patch('fullapi.commands.deploy.DockerBuilder') as mock_builder, \
-         patch('fullapi.commands.deploy.TerraformGenerator') as mock_generator, \
-         patch('fullapi.commands.deploy.TerraformApplier') as mock_applier:
+         patch('fullapi.commands.deploy.DockerBuilder'), \
+         patch('fullapi.commands.deploy.TerraformGenerator'), \
+         patch('fullapi.commands.deploy.TerraformApplier'):
 
         # Setup minimal mocks
         mock_analyzer_instance = Mock()
@@ -284,7 +284,7 @@ def test_deploy_project_default_values():
         mock_planner.return_value = mock_planner_instance
 
         # Call with defaults (should use current directory and default region)
-        result = deploy_project(
+        deploy_project(
             project_path=Path("."),
             cloud_provider="aws",
             deployment_type="server",

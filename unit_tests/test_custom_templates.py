@@ -200,7 +200,7 @@ app = FastAPI(title="source_project")
         (template_dir / "config.py").write_text(template_content)
         
         manager = CustomTemplateManager(str(template_dir))
-        template_files = manager.get_template_files()
+        manager.get_template_files()
         
         # Test substitution
         config = ProjectConfig(
@@ -212,7 +212,6 @@ app = FastAPI(title="source_project")
             redis=True
         )
         
-        template_vars = {"project_name": config.name}
         substituted = template_content.replace("${project_name}", "test_project")
         substituted = substituted.replace("${mode}", config.mode)
         substituted = substituted.replace("${database}", config.database)

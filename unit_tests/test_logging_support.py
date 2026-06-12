@@ -8,7 +8,7 @@ import pytest
 
 from fullapi.scaffold import scaffold_project
 from fullapi.config import ProjectConfig
-from fullapi.templates import logging as logging_templates
+from fullapi.templates import logging_new as logging_templates
 
 
 class TestLoggingSupport:

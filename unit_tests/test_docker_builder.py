@@ -1,6 +1,5 @@
 """Tests for Docker builder."""
 
-from pathlib import Path
 from unittest.mock import Mock, patch
 from fullapi.deployers.docker_builder import DockerBuilder
 

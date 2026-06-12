@@ -1,7 +1,6 @@
 """Terraform operations."""
 
 import subprocess
-import sys
 from pathlib import Path
 
 from fullapi.colors import color, Style
@@ -31,7 +30,7 @@ def terraform_init():
 
     if not terraform_dir.exists():
         print(f"{color('[ERROR]', Style.RED)} No terraform/ directory found")
-        print(f"Run this command from your project root")
+        print("Run this command from your project root")
         return 1
 
     print(f"{color('[INFO]', Style.CYAN)} Initializing Terraform...")
@@ -69,9 +68,9 @@ def terraform_plan():
         content = tfvars_path.read_text()
         if "REPLACE_WITH_IMAGE_URI" in content:
             print(f"{color('[WARNING]', Style.YELLOW)} container_image_uri not set in terraform.tfvars")
-            print(f"Build and push your Docker image first:")
-            print(f"  fullapi docker build")
-            print(f"  fullapi docker push")
+            print("Build and push your Docker image first:")
+            print("  fullapi docker build")
+            print("  fullapi docker push")
             print()
 
     print(f"{color('[INFO]', Style.CYAN)} Generating plan...")

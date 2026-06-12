@@ -8,7 +8,7 @@ import pytest
 
 from fullapi.scaffold import scaffold_project
 from fullapi.config import ProjectConfig
-from fullapi.templates import middleware
+from fullapi.templates import middleware_new as middleware
 
 
 class TestMiddlewareSupport:

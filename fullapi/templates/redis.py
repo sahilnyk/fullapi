@@ -52,8 +52,8 @@ class RedisClient:
     def _connect(self) -> None:
         """Establish Redis connection."""
         try:
-            self._client = redis.Redis(
-                from_url=self.config.get_redis_url(),
+            self._client = redis.Redis.from_url(
+                self.config.get_redis_url(),
                 decode_responses=self.config.redis_decode_responses,
                 socket_timeout=self.config.redis_socket_timeout,
                 socket_connect_timeout=self.config.redis_socket_connect_timeout,

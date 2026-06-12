@@ -10,6 +10,7 @@ class BaseSchema(BaseModel):
 
 USER_SCHEMA = '''from pydantic import BaseModel, EmailStr
 from typing import Optional
+from datetime import datetime
 
 
 class UserBase(BaseModel):
@@ -24,13 +25,14 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     username: Optional[str] = None
-    password: Optional[str] = None
 
 
 class UserResponse(UserBase):
     id: int
     is_active: bool
+    role: str
+    created_at: datetime
+    updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 '''

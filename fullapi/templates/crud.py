@@ -1,37 +1,35 @@
 """CRUD operation templates."""
 
 USER_CRUD = '''from sqlalchemy.orm import Session
+from typing import Optional, Dict, Any
+from passlib.context import CryptContext
+from crud.base import BaseCRUD
 from models.user import User
-from schemas.user import UserCreate
-from core.security import get_password_hash
 
-# SECURITY WARNING: Always use SQLAlchemy ORM methods for queries
-# NEVER use raw SQL with string formatting - it causes SQL injection!
-# BAD:  db.execute(f"SELECT * FROM users WHERE id = {user_id}")
-# GOOD: db.query(User).filter(User.id == user_id).first()
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def get_user(db: Session, user_id: int):
-    return db.query(User).filter(User.id == user_id).first()
+class UserCRUD(BaseCRUD[User]):
+    def __init__(self):
+        super().__init__(User)
+
+    def get_by_email(self, db: Session, email: str) -> Optional[User]:
+        return db.query(User).filter(
+            User.email == email,
+            User.is_deleted == False
+        ).first()
+
+    def get_by_username(self, db: Session, username: str) -> Optional[User]:
+        return db.query(User).filter(
+            User.username == username,
+            User.is_deleted == False
+        ).first()
+
+    def create(self, db: Session, obj_in: Dict[str, Any]) -> User:
+        if "password" in obj_in and "hashed_password" not in obj_in:
+            obj_in["hashed_password"] = pwd_context.hash(obj_in.pop("password"))
+        return super().create(db, obj_in)
 
 
-def get_user_by_email(db: Session, email: str):
-    return db.query(User).filter(User.email == email).first()
-
-
-def get_users(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(User).offset(skip).limit(limit).all()
-
-
-def create_user(db: Session, user: UserCreate):
-    hashed_password = get_password_hash(user.password)
-    db_user = User(
-        email=user.email,
-        username=user.username,
-        hashed_password=hashed_password
-    )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
+user_crud = UserCRUD()
 '''

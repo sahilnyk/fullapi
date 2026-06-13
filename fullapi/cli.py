@@ -31,19 +31,20 @@ from fullapi.commands.deploy import deploy_project
 
 
 BANNER = r"""
-   ____       __        __         
-  / __ \___  / /_______/ /_  ____ _ 
- / / / / _ \/ __/ ___/ __ \/ __ `/ 
-/ /_/ /  __/ /_(__  ) / / / /_/ /  
-\____/\___/\__/____/_/ /_/\__,_/   
+ _____      _ _             _ 
+|  ___|   _| | | __ _ _ __ (_)
+| |_ | | | | | |/ _` | '_ \| |
+|  _|| |_| | | | (_| | |_) | |
+|_|   \__,_|_|_|\__,_| .__/|_|
+                     |_|      
 """
 
 def print_banner():
     """Print the fullapi banner."""
     print()
     print(color(BANNER, Style.BRIGHT_CYAN, Style.BOLD))
-    print(f"  {ICON_BOLT} {bold('fullapi')} {muted(f'v{__version__}')}")
-    print(f"  {muted('FastAPI project scaffolder  •  zero deps, one command')}")
+    print(f"  {ICON_BOLT} {bold('Fullapi')} {muted(f'v{__version__}')}")
+    print(f"  {muted('Create FastAPI services in one command')}")
     print()
 
 

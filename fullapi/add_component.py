@@ -25,8 +25,6 @@ def add_component_to_project(component_type: str, component_name: str) -> None:
         _add_model(component_name)
     
     show_loading_animation("Finalizing component addition", 0.5)
-    print(f"  {ICON_CHECK}  {success(f'{component_type.capitalize()} added successfully!')}")
-    print()
 
 
 def _add_router(name: str) -> None:

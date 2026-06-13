@@ -12,8 +12,8 @@ except ImportError:
 
 from fullapi import __version__
 from fullapi.colors import (
-    ICON_BOLT, ICON_CROSS,
-    error, info, muted, bold, color, Style
+    ICON_BOLT, ICON_CROSS, ICON_CHECK, ICON_WARNING, ICON_ARROW,
+    error, info, muted, bold, color, Style, success
 )
 from fullapi.config import ProjectConfig
 from fullapi.prompt import prompt_config
@@ -30,16 +30,70 @@ from fullapi.scale_ops import scale_up, scale_down, scale_set, scale_status
 from fullapi.commands.deploy import deploy_project
 
 
+BANNER = r"""
+   ____       __        __         
+  / __ \___  / /_______/ /_  ____ _ 
+ / / / / _ \/ __/ ___/ __ \/ __ `/ 
+/ /_/ /  __/ /_(__  ) / / / /_/ /  
+\____/\___/\__/____/_/ /_/\__,_/   
+"""
+
 def print_banner():
     """Print the fullapi banner."""
     print()
+    print(color(BANNER, Style.BRIGHT_CYAN, Style.BOLD))
     print(f"  {ICON_BOLT} {bold('fullapi')} {muted(f'v{__version__}')}")
-    print(f"  {muted('FastAPI project scaffolder')}")
+    print(f"  {muted('FastAPI project scaffolder  •  zero deps, one command')}")
+    print()
+
+
+def print_config_summary(config: ProjectConfig):
+    """Print a nice summary of the configuration."""
+    print()
+    print(f"  {bold('Configuration Summary')}")
+    print(f"  {muted('─' * 40)}")
+    print(f"    {info('Project:')}      {bold(config.name)}")
+    print(f"    {info('Mode:')}         {color(config.mode.upper(), Style.BOLD)}")
+    print(f"    {info('Database:')}     {color(config.database, Style.CYAN)}")
+    print(f"    {info('Auth:')}         {color('JWT' if config.auth else 'None', Style.GREEN if config.auth else Style.DIM)}")
+    print(f"    {info('Docker:')}       {color('Yes' if config.docker else 'No', Style.GREEN if config.docker else Style.DIM)}")
+    print(f"    {info('Redis:')}        {color('Yes' if config.redis else 'No', Style.GREEN if config.redis else Style.DIM)}")
+    print(f"    {info('Middleware:')}   {color('Yes' if config.middleware else 'No', Style.GREEN if config.middleware else Style.DIM)}")
+    print(f"    {info('Logging:')}      {color('Yes' if config.logging else 'No', Style.GREEN if config.logging else Style.DIM)}")
+    if config.terraform:
+        print(f"    {info('Terraform:')}    {color('Yes', Style.GREEN)}  ({config.cloud_provider}/{config.region}/{config.instance_size})")
+    print(f"  {muted('─' * 40)}")
+    print()
+
+
+def print_success(project_name: str, terraform=False):
+    """Print success message with next steps."""
+    print()
+    print(f"  {ICON_CHECK}  {bold(success('Project created successfully!'))}")
+    print()
+    print(f"  {bold('Next steps:')}")
+    print(f"    {color('cd', Style.CYAN)} {project_name}")
+    print(f"    {color('pip install -r', Style.CYAN)} requirements.txt")
+    if terraform:
+        print(f"    {color('fullapi terraform init', Style.CYAN)}")
+        print(f"    {color('fullapi terraform plan', Style.CYAN)}")
+    print(f"    {color('uvicorn', Style.CYAN)} main:app --reload")
+    print()
+    print(f"  {muted(f'Docs: http://localhost:8000/docs')}")
     print()
 
 
 def main():
     """Main entry point for the fullapi CLI."""
+    # First, parse global flags before subcommand
+    global_parser = argparse.ArgumentParser(add_help=False)
+    global_parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
+    global_parser.add_argument("-q", "--quiet", action="store_true", help="Quiet mode (minimal output)")
+    global_args, remaining = global_parser.parse_known_args()
+    
+    quiet = global_args.quiet
+    verbose = global_args.verbose
+    
     parser = argparse.ArgumentParser(
         prog="fullapi",
         description="FastAPI project scaffolder — zero dependencies, one command.",
@@ -205,25 +259,31 @@ Examples:
     deploy_parser.add_argument("--name", required=True, help="Application name")
     deploy_parser.add_argument("--region", default="us-east-1", help="Cloud region (default: us-east-1)")
 
-    args = parser.parse_args()
+    # Parse subcommand from remaining args
+    args = parser.parse_args(remaining)
     
     if args.command is None:
-        print_banner()
+        if not quiet:
+            print_banner()
         parser.print_help()
         sys.exit(0)
     
     if args.command == "new":
-        print_banner()
-        handle_new(args)
+        if not quiet:
+            print_banner()
+        handle_new(args, quiet=quiet, verbose=verbose)
     elif args.command == "add":
-        print_banner()
-        handle_add(args)
+        if not quiet:
+            print_banner()
+        handle_add(args, quiet=quiet)
     elif args.command == "doctor":
-        print_banner()
-        handle_doctor()
+        if not quiet:
+            print_banner()
+        handle_doctor(quiet=quiet)
     elif args.command == "preset":
-        print_banner()
-        handle_preset(args)
+        if not quiet:
+            print_banner()
+        handle_preset(args, quiet=quiet)
     elif args.command == "terraform":
         handle_terraform(args)
     elif args.command == "docker":
@@ -234,7 +294,7 @@ Examples:
         handle_deploy(args)
 
 
-def handle_new(args):
+def handle_new(args, quiet=False, verbose=False):
     """Handle the 'new' command."""
     if not args.project_name:
         print(f"  {ICON_CROSS}  {error('Missing project name')}")
@@ -260,8 +320,9 @@ def handle_new(args):
             print()
             sys.exit(1)
         config = apply_preset(args.project_name, preset)
-        print(f"  {info('Using preset:')} {bold(args.preset)}")
-        print()
+        if not quiet:
+            print(f"  {info('Using preset:')} {bold(args.preset)}")
+            print()
     elif args.basic or args.full:
         # CLI flags mode
         cloud_provider = None
@@ -271,7 +332,8 @@ def handle_new(args):
         # If terraform flag is set, prompt for cloud configuration
         if args.terraform:
             from fullapi.prompt import _prompt_choice
-            print()
+            if not quiet:
+                print()
             cloud_provider_idx = _prompt_choice(
                 "Cloud Provider",
                 ["AWS", "Google Cloud (GCP)", "Azure"]
@@ -279,7 +341,8 @@ def handle_new(args):
             provider_map = {0: "aws", 1: "gcp", 2: "azure"}
             cloud_provider = provider_map[cloud_provider_idx]
 
-            print()
+            if not quiet:
+                print()
             if cloud_provider == "aws":
                 region_idx = _prompt_choice(
                     "AWS Region",
@@ -300,7 +363,8 @@ def handle_new(args):
                 regions = ["eastus", "westus2", "westeurope"]
             region = regions[region_idx]
 
-            print()
+            if not quiet:
+                print()
             size_idx = _prompt_choice(
                 "Instance Size",
                 ["Small (1 vCPU, 2GB RAM) - $10-15/month",
@@ -309,7 +373,8 @@ def handle_new(args):
             )
             sizes = ["small", "medium", "large"]
             instance_size = sizes[size_idx]
-            print()
+            if not quiet:
+                print()
 
         config = ProjectConfig(
             name=args.project_name,
@@ -330,11 +395,21 @@ def handle_new(args):
         # Interactive prompt mode
         config = prompt_config(args.project_name)
 
+    # Show config summary (unless quiet)
+    if not quiet:
+        print_config_summary(config)
+        if verbose:
+            print(f"  {muted('Generating project files...')}")
+            print()
+
     # Scaffold the project
     scaffold_project(config)
+    
+    if not quiet:
+        print_success(config.name, terraform=config.terraform)
 
 
-def handle_add(args):
+def handle_add(args, quiet=False):
     """Handle the 'add' command."""
     # Check if we're in a valid project directory
     if not Path("main.py").exists():
@@ -348,31 +423,39 @@ def handle_add(args):
     
     # Add the component
     add_component_to_project(args.component_type, args.component_name)
+    
+    if not quiet:
+        print(f"  {ICON_CHECK}  {success(f'{args.component_type.capitalize()} added successfully!')}")
+        print()
 
 
-def handle_doctor():
+def handle_doctor(quiet=False):
     """Handle the 'doctor' command."""
     if not Path("main.py").exists():
         print(f"  {ICON_CROSS}  {error('Not in a valid fullapi project directory')}")
         print()
         sys.exit(1)
     run_doctor()
+    if not quiet:
+        print()
 
 
-def handle_preset(args):
+def handle_preset(args, quiet=False):
     """Handle the 'preset' command."""
     presets = list_presets()
 
     if args.action == "list":
-        print(f"  {bold('Available Presets')}")
-        print()
+        if not quiet:
+            print(f"  {bold('Available Presets')}")
+            print()
         for name, preset in presets.items():
             desc = preset.get("description", "")
             print(f"    {color(name, Style.CYAN)}  {muted(desc)}")
-        print()
-        print(f"  {muted('Usage:')} fullapi new my_api --preset <name>")
-        print(f"  {muted('Custom:')} ~/.fullapi/presets.json")
-        print()
+        if not quiet:
+            print()
+            print(f"  {muted('Usage:')} fullapi new my_api --preset <name>")
+            print(f"  {muted('Custom:')} ~/.fullapi/presets.json")
+            print()
 
     elif args.action == "show":
         if not args.preset_name:
@@ -382,8 +465,9 @@ def handle_preset(args):
         if not preset:
             print(f"  {ICON_CROSS}  {error(f'Unknown preset: {args.preset_name}')}")
             sys.exit(1)
-        print(f"  {bold(args.preset_name)}  {muted(preset.get('description', ''))}")
-        print()
+        if not quiet:
+            print(f"  {bold(args.preset_name)}  {muted(preset.get('description', ''))}")
+            print()
         for key, value in preset.items():
             if key == "description":
                 continue
@@ -396,7 +480,8 @@ def handle_preset(args):
             else:
                 label = muted("none")
             print(f"    {key}: {label}")
-        print()
+        if not quiet:
+            print()
 
 
 def handle_terraform(args):

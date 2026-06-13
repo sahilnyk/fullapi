@@ -91,18 +91,6 @@ def _scaffold_with_custom_template(config: ProjectConfig, project_path: Path) ->
     print()
     show_loading_animation("Finalizing custom template project", 0.5)
 
-    success_msg = success('Project created successfully!')
-    print(f"  {ICON_CHECK}  {success_msg}")
-    print()
-    print(f"  {bold('Next steps:')}")
-    print(f"    {color('cd', Style.CYAN)} {config.name}")
-    print(f"    {color('pip install -r', Style.CYAN)} requirements.txt")
-    print(f"    {color('uvicorn', Style.CYAN)} main:app --reload")
-    print()
-    docs_msg = muted(f'Docs: http://localhost:{DEFAULT_PORT}/docs')
-    print(f"  {docs_msg}")
-    print()
-
 
 def scaffold_project(config: ProjectConfig) -> None:
     """Create the project structure based on config."""
@@ -168,24 +156,10 @@ def scaffold_project(config: ProjectConfig) -> None:
     print()
     show_loading_animation("Finalizing project setup", 0.5)
 
-    print(f"  {ICON_CHECK}  {success('Project created successfully!')}")
-    print()
-
     # Show Terraform warning if enabled
     if config.terraform:
         print(f"  {color('[WARNING] Cross-validate Terraform files before applying', Style.YELLOW)}")
         print()
-
-    print(f"  {bold('Next steps:')}")
-    print(f"    {color('cd', Style.CYAN)} {config.name}")
-    print(f"    {color('pip install -r', Style.CYAN)} requirements.txt")
-    if config.terraform:
-        print(f"    {color('fullapi terraform init', Style.CYAN)}")
-        print(f"    {color('fullapi terraform plan', Style.CYAN)}")
-    print(f"    {color('uvicorn', Style.CYAN)} main:app --reload")
-    print()
-    print(f"  {muted('Docs:')} http://localhost:{DEFAULT_PORT}/docs")
-    print()
 
 
 def _generate_terraform_files(project_path: Path, config: ProjectConfig):

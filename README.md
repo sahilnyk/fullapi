@@ -7,7 +7,7 @@ CLI tool for production-ready FastAPI projects with auth, Docker, databases, and
 [![PyPI](https://img.shields.io/pypi/v/fullapi?color=009688)](https://pypi.org/project/fullapi/)
 [![Python](https://img.shields.io/pypi/pyversions/fullapi?color=009688)](https://pypi.org/project/fullapi/)
 [![Downloads](https://img.shields.io/pypi/dm/fullapi?color=009688)](https://pypi.org/project/fullapi/)
-[![Issues](https://img.shields.io/github/issues/sahilnyk/fullapi?color=009688)](https://github.com/sahilnyk/fullapi/issues)
+[![Issues](https://img.shields.io/github/issues-raw/sahilnyk/fullapi?color=009688)](https://github.com/sahilnyk/fullapi/issues)
 [![Changelog](https://img.shields.io/badge/changelog-1.1.1-009688)](CHANGELOG.md)
 [![Contributing](https://img.shields.io/badge/PRs-welcome-009688)](CONTRIBUTING.md)
 

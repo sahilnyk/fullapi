@@ -45,17 +45,8 @@ def _get_project_metadata() -> dict:
         return {}
 
 
-def _get_registry_url(cloud_provider: str, region: str, project_name: str) -> str:
-    """Get registry URL based on cloud provider."""
-    if cloud_provider == "aws":
-        # Format: <account-id>.dkr.ecr.<region>.amazonaws.com/<repo-name>
-        return f"<AWS_ACCOUNT_ID>.dkr.ecr.{region}.amazonaws.com/{project_name}"
-    elif cloud_provider == "gcp":
-        # Format: <region>-docker.pkg.dev/<project-id>/<repo-name>/<image-name>
-        return f"{region}-docker.pkg.dev/<GCP_PROJECT_ID>/{project_name}/{project_name}"
-    elif cloud_provider == "azure":
-        # Format: <registry-name>.azurecr.io/<image-name>
-        return f"<REGISTRY_NAME>.azurecr.io/{project_name}"
+def _get_registry_url(project_name: str) -> str:
+    """Get registry URL (generic)."""
     return project_name
 
 
@@ -98,28 +89,21 @@ def docker_build():
 
 
 def docker_push():
-    """Push Docker image to cloud registry."""
+    """Push Docker image to registry."""
     metadata = _get_project_metadata()
 
     if not metadata:
         print(f"{color('[ERROR]', Style.RED)} No .fullapi.json found")
         return 1
 
-    cloud_provider = metadata.get('cloud_provider')
-    region = metadata.get('region')
     project_name = metadata.get('name', Path.cwd().name)
-
-    if not cloud_provider or not region:
-        print(f"{color('[ERROR]', Style.RED)} Terraform not configured")
-        print("Create project with --terraform flag")
-        return 1
 
     commit = _get_git_commit()
     local_tag = f"{project_name}:{commit}"
-    registry_url = _get_registry_url(cloud_provider, region, project_name)
+    registry_url = _get_registry_url(project_name)
     remote_tag = f"{registry_url}:{commit}"
 
-    print(f"{color('[INFO]', Style.CYAN)} Pushing to {cloud_provider.upper()} registry...")
+    print(f"{color('[INFO]', Style.CYAN)} Pushing to registry...")
     print(f"  Local:  {local_tag}")
     print(f"  Remote: {remote_tag}")
     print()
@@ -130,12 +114,6 @@ def docker_push():
         print(f"{color('[ERROR]', Style.RED)} Image not found: {local_tag}")
         print("Build it first: fullapi docker build")
         return 1
-
-    # Authenticate based on cloud provider
-    print(f"{color('[INFO]', Style.CYAN)} Authenticating...")
-    auth_exit_code = _authenticate_registry(cloud_provider, region)
-    if auth_exit_code != 0:
-        return auth_exit_code
 
     # Tag for remote
     print(f"{color('[INFO]', Style.CYAN)} Tagging image...")
@@ -151,86 +129,7 @@ def docker_push():
     if exit_code == 0:
         print()
         print(f"{color('[OK]', Style.GREEN)} Image pushed: {remote_tag}")
-        print()
-        print("Update terraform.tfvars:")
-        print(f'  container_image_uri = "{remote_tag}"')
-        print()
-        print("Then deploy:")
-        print("  fullapi terraform apply")
-
-        # Update terraform.tfvars if it exists
-        _update_tfvars(remote_tag)
     else:
         print(f"{color('[ERROR]', Style.RED)} Push failed")
 
     return exit_code
-
-
-def _authenticate_registry(cloud_provider: str, region: str) -> int:
-    """Authenticate with cloud registry."""
-    if cloud_provider == "aws":
-        print("  Authenticating with ECR...")
-        exit_code, password = _run_command([
-            "aws", "ecr", "get-login-password",
-            "--region", region
-        ])
-        if exit_code != 0:
-            print(f"{color('[ERROR]', Style.RED)} AWS CLI authentication failed")
-            print("Run: aws configure")
-            return exit_code
-
-        exit_code, _ = _run_command([
-            "docker", "login",
-            "--username", "AWS",
-            "--password-stdin",
-            f"<AWS_ACCOUNT_ID>.dkr.ecr.{region}.amazonaws.com"
-        ])
-        return exit_code
-
-    elif cloud_provider == "gcp":
-        print("  Authenticating with GCR...")
-        exit_code, _ = _run_command([
-            "gcloud", "auth", "configure-docker",
-            f"{region}-docker.pkg.dev"
-        ])
-        if exit_code != 0:
-            print(f"{color('[ERROR]', Style.RED)} GCloud authentication failed")
-            print("Run: gcloud auth login")
-        return exit_code
-
-    elif cloud_provider == "azure":
-        print("  Authenticating with ACR...")
-        exit_code, _ = _run_command([
-            "az", "acr", "login",
-            "--name", "<REGISTRY_NAME>"
-        ])
-        if exit_code != 0:
-            print(f"{color('[ERROR]', Style.RED)} Azure CLI authentication failed")
-            print("Run: az login")
-        return exit_code
-
-    return 0
-
-
-def _update_tfvars(image_uri: str):
-    """Update container_image_uri in terraform.tfvars."""
-    tfvars_path = Path.cwd() / "terraform" / "terraform.tfvars"
-
-    if not tfvars_path.exists():
-        return
-
-    try:
-        content = tfvars_path.read_text()
-        lines = content.split('\n')
-        updated_lines = []
-
-        for line in lines:
-            if line.startswith('container_image_uri'):
-                updated_lines.append(f'container_image_uri = "{image_uri}"')
-            else:
-                updated_lines.append(line)
-
-        tfvars_path.write_text('\n'.join(updated_lines))
-        print(f"{color('[OK]', Style.GREEN)} Updated terraform.tfvars")
-    except Exception as e:
-        print(f"{color('[WARNING]', Style.YELLOW)} Could not update terraform.tfvars: {e}")

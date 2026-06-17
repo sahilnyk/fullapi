@@ -21,13 +21,7 @@ from fullapi.scaffold import scaffold_project
 from fullapi.add_component import add_component_to_project
 from fullapi.doctor import run_doctor
 from fullapi.presets import get_preset, apply_preset, list_presets
-from fullapi.terraform_ops import (
-    terraform_init, terraform_validate, terraform_plan,
-    terraform_apply, terraform_destroy, terraform_output
-)
 from fullapi.docker_ops import docker_build, docker_push
-from fullapi.scale_ops import scale_up, scale_down, scale_set, scale_status
-from fullapi.commands.deploy import deploy_project
 
 
 BANNER = r"""
@@ -61,13 +55,11 @@ def print_config_summary(config: ProjectConfig):
     print(f"    {info('Redis:')}        {color('Yes' if config.redis else 'No', Style.GREEN if config.redis else Style.DIM)}")
     print(f"    {info('Middleware:')}   {color('Yes' if config.middleware else 'No', Style.GREEN if config.middleware else Style.DIM)}")
     print(f"    {info('Logging:')}      {color('Yes' if config.logging else 'No', Style.GREEN if config.logging else Style.DIM)}")
-    if config.terraform:
-        print(f"    {info('Terraform:')}    {color('Yes', Style.GREEN)}  ({config.cloud_provider}/{config.region}/{config.instance_size})")
     print(f"  {muted('─' * 40)}")
     print()
 
 
-def print_success(project_name: str, terraform=False):
+def print_success(project_name: str):
     """Print success message with next steps."""
     print()
     print(f"  {ICON_CHECK}  {bold(success('Project created successfully!'))}")
@@ -75,9 +67,6 @@ def print_success(project_name: str, terraform=False):
     print(f"  {bold('Next steps:')}")
     print(f"    {color('cd', Style.CYAN)} {project_name}")
     print(f"    {color('pip install -r', Style.CYAN)} requirements.txt")
-    if terraform:
-        print(f"    {color('fullapi terraform init', Style.CYAN)}")
-        print(f"    {color('fullapi terraform plan', Style.CYAN)}")
     print(f"    {color('uvicorn', Style.CYAN)} main:app --reload")
     print()
     print(f"  {muted(f'Docs: http://localhost:8000/docs')}")
@@ -165,7 +154,6 @@ Examples:
     new_parser.add_argument("--middleware", action="store_true", help="Add middleware support")
     new_parser.add_argument("--logging", action="store_true", help="Add logging support")
     new_parser.add_argument("--preset", type=str, help="Use a named preset (e.g. production, microservice)")
-    new_parser.add_argument("--terraform", action="store_true", help="Add Terraform infrastructure")
     
     # 'add' command
     add_parser = subparsers.add_parser(
@@ -212,17 +200,6 @@ Examples:
     preset_parser.add_argument("action", choices=["list", "show"], help="Action: list or show")
     preset_parser.add_argument("preset_name", nargs="?", help="Preset name (for show)")
 
-    # 'terraform' command
-    terraform_parser = subparsers.add_parser(
-        "terraform",
-        help="Terraform operations",
-        description="Manage infrastructure with Terraform",
-        add_help=False
-    )
-    terraform_parser.add_argument("-h", "--help", action="help", help="Show help for terraform command")
-    terraform_parser.add_argument("action", choices=["init", "validate", "plan", "apply", "destroy", "output"],
-                                  help="Terraform action")
-
     # 'docker' command
     docker_parser = subparsers.add_parser(
         "docker",
@@ -232,33 +209,6 @@ Examples:
     )
     docker_parser.add_argument("-h", "--help", action="help", help="Show help for docker command")
     docker_parser.add_argument("action", choices=["build", "push"], help="Docker action")
-
-    # 'scale' command
-    scale_parser = subparsers.add_parser(
-        "scale",
-        help="Scale infrastructure",
-        description="Scale infrastructure resources",
-        add_help=False
-    )
-    scale_parser.add_argument("-h", "--help", action="help", help="Show help for scale command")
-    scale_parser.add_argument("action", choices=["up", "down", "set", "status"], help="Scale action")
-    scale_parser.add_argument("size", nargs="?", choices=["small", "medium", "large"],
-                             help="Instance size (for set action)")
-
-    # 'deploy' command
-    deploy_parser = subparsers.add_parser(
-        "deploy",
-        help="Deploy project to cloud",
-        description="Deploy FastAPI project to cloud infrastructure",
-        add_help=False
-    )
-    deploy_parser.add_argument("-h", "--help", action="help", help="Show help for deploy command")
-    deploy_parser.add_argument("--cloud", required=True, choices=["aws", "gcp", "azure"],
-                              help="Cloud provider (aws, gcp, azure)")
-    deploy_parser.add_argument("--type", required=True, choices=["server", "serverless"],
-                              help="Deployment type (server, serverless)")
-    deploy_parser.add_argument("--name", required=True, help="Application name")
-    deploy_parser.add_argument("--region", default="us-east-1", help="Cloud region (default: us-east-1)")
 
     # Parse subcommand from remaining args
     args = parser.parse_args(remaining)
@@ -285,14 +235,8 @@ Examples:
         if not quiet:
             print_banner()
         handle_preset(args, quiet=quiet)
-    elif args.command == "terraform":
-        handle_terraform(args)
     elif args.command == "docker":
         handle_docker(args)
-    elif args.command == "scale":
-        handle_scale(args)
-    elif args.command == "deploy":
-        handle_deploy(args)
 
 
 def handle_new(args, quiet=False, verbose=False):
@@ -326,57 +270,6 @@ def handle_new(args, quiet=False, verbose=False):
             print()
     elif args.basic or args.full:
         # CLI flags mode
-        cloud_provider = None
-        region = None
-        instance_size = "small"
-
-        # If terraform flag is set, prompt for cloud configuration
-        if args.terraform:
-            from fullapi.prompt import _prompt_choice
-            if not quiet:
-                print()
-            cloud_provider_idx = _prompt_choice(
-                "Cloud Provider",
-                ["AWS", "Google Cloud (GCP)", "Azure"]
-            )
-            provider_map = {0: "aws", 1: "gcp", 2: "azure"}
-            cloud_provider = provider_map[cloud_provider_idx]
-
-            if not quiet:
-                print()
-            if cloud_provider == "aws":
-                region_idx = _prompt_choice(
-                    "AWS Region",
-                    ["us-east-1", "us-west-2", "eu-west-1"]
-                )
-                regions = ["us-east-1", "us-west-2", "eu-west-1"]
-            elif cloud_provider == "gcp":
-                region_idx = _prompt_choice(
-                    "GCP Region",
-                    ["us-central1", "us-west1", "europe-west1"]
-                )
-                regions = ["us-central1", "us-west1", "europe-west1"]
-            else:  # azure
-                region_idx = _prompt_choice(
-                    "Azure Region",
-                    ["eastus", "westus2", "westeurope"]
-                )
-                regions = ["eastus", "westus2", "westeurope"]
-            region = regions[region_idx]
-
-            if not quiet:
-                print()
-            size_idx = _prompt_choice(
-                "Instance Size",
-                ["Small (1 vCPU, 2GB RAM) - $10-15/month",
-                 "Medium (2 vCPU, 4GB RAM) - $25-35/month",
-                 "Large (4 vCPU, 8GB RAM) - $60-80/month"]
-            )
-            sizes = ["small", "medium", "large"]
-            instance_size = sizes[size_idx]
-            if not quiet:
-                print()
-
         config = ProjectConfig(
             name=args.project_name,
             mode="full" if args.full else "basic",
@@ -387,10 +280,6 @@ def handle_new(args, quiet=False, verbose=False):
             middleware=args.middleware,
             logging=args.logging,
             template=args.template,
-            terraform=args.terraform,
-            cloud_provider=cloud_provider,
-            region=region,
-            instance_size=instance_size
         )
     else:
         # Interactive prompt mode
@@ -407,7 +296,7 @@ def handle_new(args, quiet=False, verbose=False):
     scaffold_project(config)
     
     if not quiet:
-        print_success(config.name, terraform=config.terraform)
+        print_success(config.name)
 
 
 def handle_add(args, quiet=False):
@@ -485,21 +374,6 @@ def handle_preset(args, quiet=False):
             print()
 
 
-def handle_terraform(args):
-    """Handle the 'terraform' command."""
-    actions = {
-        "init": terraform_init,
-        "validate": terraform_validate,
-        "plan": terraform_plan,
-        "apply": terraform_apply,
-        "destroy": terraform_destroy,
-        "output": terraform_output,
-    }
-
-    exit_code = actions[args.action]()
-    sys.exit(exit_code)
-
-
 def handle_docker(args):
     """Handle the 'docker' command."""
     actions = {
@@ -509,37 +383,6 @@ def handle_docker(args):
 
     exit_code = actions[args.action]()
     sys.exit(exit_code)
-
-
-def handle_scale(args):
-    """Handle the 'scale' command."""
-    if args.action == "up":
-        exit_code = scale_up()
-    elif args.action == "down":
-        exit_code = scale_down()
-    elif args.action == "set":
-        if not args.size:
-            print(f"{color('[ERROR]', Style.RED)} Size required: fullapi scale set <small|medium|large>")
-            sys.exit(1)
-        exit_code = scale_set(args.size)
-    elif args.action == "status":
-        exit_code = scale_status()
-    else:
-        exit_code = 1
-
-    sys.exit(exit_code)
-
-
-def handle_deploy(args):
-    """Handle the 'deploy' command."""
-    success = deploy_project(
-        project_path=Path("."),
-        cloud_provider=args.cloud,
-        deployment_type=args.type,
-        app_name=args.name,
-        region=args.region
-    )
-    sys.exit(0 if success else 1)
 
 
 if __name__ == "__main__":

@@ -14,7 +14,6 @@ from fullapi.colors import (
 from fullapi.templates import (
     main_basic, router, schema,
     requirements, alembic, redis,
-    terraform as terraform_templates,
     exceptions as exceptions_templates,
     responses as responses_templates,
     mixins as mixins_templates,
@@ -149,66 +148,8 @@ def scaffold_project(config: ProjectConfig) -> None:
     # Write project metadata
     write_metadata(project_path, config)
 
-    # Generate Terraform files if requested
-    if config.terraform:
-        _generate_terraform_files(project_path, config)
-
     print()
     show_loading_animation("Finalizing project setup", 0.5)
-
-    # Show Terraform warning if enabled
-    if config.terraform:
-        print(f"  {color('[WARNING] Cross-validate Terraform files before applying', Style.YELLOW)}")
-        print()
-
-
-def _generate_terraform_files(project_path: Path, config: ProjectConfig):
-    """Generate Terraform configuration files."""
-    terraform_dir = project_path / "terraform"
-    terraform_dir.mkdir(exist_ok=True)
-
-    enable_database = config.database != "none"
-    enable_cache = config.redis
-
-    # Generate main.tf
-    main_tf_content = terraform_templates.main_tf(
-        config.name,
-        config.cloud_provider,
-        enable_database,
-        enable_cache
-    )
-    (terraform_dir / "main.tf").write_text(main_tf_content)
-
-    # Generate variables.tf
-    variables_tf_content = terraform_templates.variables_tf(
-        config.cloud_provider,
-        enable_database,
-        enable_cache
-    )
-    (terraform_dir / "variables.tf").write_text(variables_tf_content)
-
-    # Generate outputs.tf
-    outputs_tf_content = terraform_templates.outputs_tf(
-        enable_database,
-        enable_cache
-    )
-    (terraform_dir / "outputs.tf").write_text(outputs_tf_content)
-
-    # Generate terraform.tfvars
-    tfvars_content = terraform_templates.terraform_tfvars(config)
-    (terraform_dir / "terraform.tfvars").write_text(tfvars_content)
-
-    # Generate README
-    readme_content = terraform_templates.readme_terraform()
-    (terraform_dir / "README.md").write_text(readme_content)
-
-    # Update .gitignore
-    gitignore_path = project_path / ".gitignore"
-    if gitignore_path.exists():
-        current = gitignore_path.read_text()
-        gitignore_path.write_text(current + terraform_templates.gitignore_additions())
-    else:
-        gitignore_path.write_text(terraform_templates.gitignore_additions())
 
 
 def _show_progress(current: int, total: int, filename: str):
@@ -629,14 +570,6 @@ logs/
 
 # Docker
 .docker/
-
-# Terraform
-.terraform/
-.terraform.lock.hcl
-terraform.tfstate
-terraform.tfstate.backup
-*.tfvars
-!terraform.tfvars.example
 
 # OS
 .DS_Store

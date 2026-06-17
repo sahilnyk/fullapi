@@ -2,7 +2,7 @@
 
 # 🕊️ fullapi
 
-CLI tool for production-ready FastAPI projects with auth, Docker, databases, and cloud deployment
+CLI tool for production-ready FastAPI projects with auth, Docker, databases, and Redis caching
 
 [![PyPI](https://img.shields.io/pypi/v/fullapi?color=009688)](https://pypi.org/project/fullapi/)
 [![Python](https://img.shields.io/pypi/pyversions/fullapi?color=009688)](https://pypi.org/project/fullapi/)
@@ -28,9 +28,13 @@ uvicorn main:app --reload
 |---------|-------------|
 | Zero Dependencies | Pure Python stdlib |
 | Production Ready | Auth, Docker, DB migrations, Redis |
-| Cloud Deploy | Terraform for AWS, GCP, Azure |
+| Modern Architecture | SQLAlchemy 2.0, Pydantic v2, async lifespan |
 | Extensible | Add routers/models anytime |
 | Health Checks | `fullapi doctor` validates structure |
+| Database Support | SQLite, PostgreSQL, MySQL with Alembic migrations |
+| JWT Authentication | Access/refresh tokens, role-based access |
+| Redis Caching | Async client with cache manager |
+| Middleware Stack | CORS, rate limiting, security headers, gzip, request ID, logging |
 
 ## Commands
 
@@ -40,8 +44,8 @@ uvicorn main:app --reload
 | `fullapi add router <name>` | Add router to project |
 | `fullapi doctor` | Check project health |
 | `fullapi docker build` | Build Docker image |
-| `fullapi terraform apply` | Deploy to cloud |
-| `fullapi scale up` | Scale infrastructure |
+| `fullapi docker push` | Push image to registry |
+| `fullapi preset list` | List available presets |
 
 ## Presets
 
@@ -58,26 +62,31 @@ fullapi new my_api [OPTIONS]
 
 --basic              Minimal structure
 --full               Production structure
---db TYPE           none | sqlite | postgresql | mysql
---auth              JWT authentication
---docker            Docker + docker-compose
---redis             Redis caching
---terraform         Cloud infrastructure (AWS, GCP, Azure)
---preset NAME       Use preset config
+--db TYPE            none | sqlite | postgresql | mysql
+--auth               JWT authentication
+--docker             Docker + docker-compose
+--redis              Redis caching
+--middleware         Middleware stack
+--logging            Structured logging
+--preset NAME        Use preset config
 ```
 
-## Cloud Deployment
+## Project Structure
 
-| Provider | Services |
-|----------|----------|
-| AWS | ECS Fargate, RDS, ElastiCache, ECR |
-| GCP | Cloud Run, Cloud SQL, Memorystore |
-| Azure | Container Apps, Azure Database, Azure Cache |
-
-| Size | Resources | Cost/month |
-|------|-----------|------------|
-| Small | 1 vCPU, 2GB | $10-15 |
-| Medium | 2 vCPU, 4GB | $25-35 |
-| Large | 4 vCPU, 8GB | $60-80 |
+```
+my_api/
+├── main.py              # FastAPI app with lifespan
+├── core/                # Config, responses, middleware, logging
+├── routers/             # API endpoints (health, users, auth, redis)
+├── schemas/             # Pydantic models
+├── models/              # SQLAlchemy models
+├── crud/                # Database operations
+├── dependencies/        # DB, auth, cache injection
+├── db/                  # Session, base, mixins
+├── tests/               # Pytest with fixtures
+├── alembic/             # DB migrations
+├── requirements.txt
+└── .env.example
+```
 
 Built and maintained by [@sahilnyk](https://github.com/sahilnyk) with zero dependencies

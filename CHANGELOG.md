@@ -1,63 +1,107 @@
 # Changelog
 
-All notable changes to fullapi will be documented here.
+All notable changes to fullapi will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
+## [Unreleased]
+
+---
+
+## [1.3.0] - 2026-06-13
+
+### Added
+- ASCII art CLI banner with updated tagline
+- Color-coded configuration summary table before project generation
+- Real-time file creation progress bar
+- `-v/--verbose` and `-q/--quiet` global flags
+
+### Changed
+- Password hashing switched from `bcrypt` to `sha256_crypt` (no 72-byte limit)
+- Simplified CLI — removed `deploy`, `scale`, and cloud infrastructure commands
+- Docker operations now work with any container registry (no cloud-specific auth)
+- `ProjectConfig` — removed `terraform`, `cloud_provider`, `region`, `instance_size` fields
+- `production` preset no longer includes Terraform configuration
+
+### Removed
+- Terraform infrastructure support (AWS ECS Fargate, GCP Cloud Run, Azure Container Apps)
+- `fullapi deploy` command and related infrastructure automation
+- `fullapi scale` command (up/down/set/status)
+- AWS/GCP/Azure deployment templates
+
+### Security
+- Fixed bcrypt 72-byte password limit by switching to `sha256_crypt`
+
+---
+
+## [1.2.1] - 2026-06-01
+
+### Fixed
+- Package version alignment between `__init__.py` and `pyproject.toml`
+
+---
 
 ## [1.2.0] - 2026-05-30
 
 ### Added
-- **Intelligent Deploy**: One-command cloud deployment with automatic infrastructure generation
-- **Codebase Analysis**: Automatic detection of project features (auth, database, caching, monitoring)
-- **AWS ECS Fargate Support**: Production-ready container orchestration with auto-generated Terraform
-- **Smart Docker Generation**: Context-aware Dockerfile and docker-compose.yml creation
-- **Infrastructure as Code**: Automatic Terraform generation based on detected project requirements
-- **Deploy Command**: `fullapi deploy` analyzes your project and generates complete deployment configuration
+- Database connection pooling (`pool_size`, `max_overflow`, auto-reconnect, hourly recycle)
+- CONTRIBUTING.md with contribution guidelines
 
-## [1.1.1] - 2026-05-28
+### Changed
+- CORS allowed headers changed from wildcard to explicit allowlist (`Content-Type`, `Authorization`, `X-Request-ID`)
+- README reorganized with feature tables for better readability
+- Enhanced security warnings in generated code comments
 
-### Security Fixes (CRITICAL)
-- **SECRET_KEY auto-generation**: Now generates random key in development, enforces in production
-- **Weak default passwords**: Replaced with explicit CHANGE_ME placeholders in .env.example
-- **Python 3.12+ compatibility**: Fixed datetime.utcnow() deprecation
-- **Database connection pooling**: Added pool_size=20, max_overflow=10, auto-reconnect, hourly recycle
-- **CORS security**: Changed wildcard headers to specific allowlist (Content-Type, Authorization, X-Request-ID)
-- **SQL injection warnings**: Added security documentation in CRUD templates
+### Fixed
+- `datetime.utcnow()` deprecation — replaced with `datetime.now(timezone.utc)` throughout generated code
+- Weak default `SECRET_KEY` — now auto-generated in development, enforced in production
 
-### Breaking Changes
-- Production apps now MUST set SECRET_KEY in .env file (intentional security measure)
-- Generate with: `python -c "import secrets; print(secrets.token_urlsafe(32))"`
+### Security
+- **Breaking**: Production deployments now require `SECRET_KEY` set in `.env`
+  - Generate: `python -c "import secrets; print(secrets.token_urlsafe(32))"`
+- Replaced weak `.env.example` password placeholders with explicit `CHANGE_ME_*` values
 
-### Documentation
-- Improved README with tables and better organization
-- Added CONTRIBUTING.md with contribution guidelines
-- Enhanced security warnings in generated code
+---
 
 ## [1.1.0] - 2026-05-27
 
-### Fixed
-- Component addition (`fullapi add router`) now detects database presence and generates appropriate code
-- Basic projects without database can now add routers with in-memory storage
-- Requirements.txt deduplication - no more duplicate dependencies
-- Added email-validator as explicit dependency instead of relying on pydantic extras
+### Added
+- `email-validator` as an explicit dependency (previously relied on pydantic extras)
 
 ### Changed
-- Updated license format in pyproject.toml to modern SPDX standard
-- Requirements now include version pins for better reproducibility
+- `pyproject.toml` license field updated to SPDX format
+- Requirements now include version floor pins for reproducibility
+
+### Fixed
+- `fullapi add router` now correctly detects database presence and generates appropriate code
+- Basic projects (no database) can now add routers with in-memory storage
+- `requirements.txt` deduplication — no more duplicate dependency lines
+
+---
 
 ## [1.0.0] - 2024-04-30
 
 ### Added
-- Initial release
-- Project scaffolding (basic and full modes)
-- Database support (SQLite, PostgreSQL, MySQL)
-- JWT authentication
-- Docker and docker-compose generation
-- Redis caching support
-- Middleware stack (CORS, rate limiting, security headers, gzip)
-- Structured logging
-- Terraform infrastructure for AWS, GCP, Azure
-- Infrastructure scaling commands
-- Presets system (production, minimal, docker-ready, microservice)
-- Component addition (routers, models)
-- Health check command (`fullapi doctor`)
-- Custom template support
-- Zero runtime dependencies
+- Project scaffolding in `basic` and `full` modes
+- Database support: SQLite, PostgreSQL, MySQL with Alembic migrations
+- JWT authentication (access + refresh tokens, role-based access)
+- Docker and `docker-compose` file generation
+- Redis caching support with async client and cache manager
+- Middleware stack: CORS, rate limiting, security headers, gzip, request ID, request logging
+- Structured logging with configurable formatters
+- Terraform infrastructure for AWS ECS, GCP Cloud Run, Azure Container Apps
+- `fullapi doctor` — project health check command
+- `fullapi add router/model` — add components to existing projects
+- Presets system (`production`, `minimal`, `docker-ready`, `microservice`)
+- Custom template directory support
+- Zero runtime dependencies for the CLI itself
+
+[Unreleased]: https://github.com/sahilnyk/fullapi/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/sahilnyk/fullapi/compare/v1.2.1...v1.3.0
+[1.2.1]: https://github.com/sahilnyk/fullapi/compare/v1.2.0...v1.2.1
+[1.2.0]: https://github.com/sahilnyk/fullapi/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/sahilnyk/fullapi/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/sahilnyk/fullapi/releases/tag/v1.0.0

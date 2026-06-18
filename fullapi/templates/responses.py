@@ -5,42 +5,47 @@ RESPONSES = '''"""Standardized API response wrappers."""
 
 from pydantic import BaseModel, Field
 from typing import TypeVar, Generic, Optional, Any, List
-from datetime import datetime
+from datetime import datetime, timezone
 
 T = TypeVar("T")
 
 
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
 class StandardResponse(BaseModel, Generic[T]):
     """Standard response wrapper for all API endpoints."""
-    
+
     success: bool
     data: Optional[T] = None
     message: Optional[str] = None
     error: Optional[dict] = None
-    timestamp: datetime = Field(default_factory=datetime.now)
-    
-    class Config:
-        json_schema_extra = {
+    timestamp: datetime = Field(default_factory=_utcnow)
+
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "success": True,
                 "data": None,
                 "message": "Operation completed successfully",
-                "timestamp": "2024-01-01T00:00:00",
+                "timestamp": "2024-01-01T00:00:00Z",
             }
         }
+    }
 
 
 class PaginatedResponse(BaseModel, Generic[T]):
     """Paginated response wrapper for list endpoints."""
-    
+
     success: bool = True
     data: List[T]
     total: int
     page: int
     per_page: int
     total_pages: int
-    timestamp: datetime = Field(default_factory=datetime.now)
-    
+    timestamp: datetime = Field(default_factory=_utcnow)
+
     @classmethod
     def create(
         cls,
@@ -78,15 +83,15 @@ def error_response(
     error_details: Optional[dict] = None,
 ) -> StandardResponse:
     """Create an error response."""
-    error = {"message": message}
+    error_body: dict = {"message": message}
     if error_code:
-        error["code"] = error_code
+        error_body["code"] = error_code
     if error_details:
-        error["details"] = error_details
-    
+        error_body["details"] = error_details
+
     return StandardResponse(
         success=False,
-        error=error,
+        error=error_body,
         message=message,
     )
 '''

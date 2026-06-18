@@ -5,7 +5,6 @@ CRUD_BASE = '''"""Base CRUD class for generic database operations."""
 
 from sqlalchemy.orm import Session
 from typing import TypeVar, Generic, Type, Optional, List, Dict, Any
-from datetime import datetime
 from db.base import Base
 
 ModelType = TypeVar("ModelType", bound=Base)

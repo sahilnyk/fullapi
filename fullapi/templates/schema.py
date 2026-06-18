@@ -4,8 +4,7 @@ BASE_SCHEMA = '''from pydantic import BaseModel
 
 
 class BaseSchema(BaseModel):
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 '''
 
 USER_SCHEMA = '''from pydantic import BaseModel, EmailStr

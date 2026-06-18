@@ -12,7 +12,7 @@ except ImportError:
 
 from fullapi import __version__
 from fullapi.colors import (
-    ICON_BOLT, ICON_CROSS, ICON_CHECK, ICON_WARNING, ICON_ARROW,
+    ICON_BOLT, ICON_CROSS, ICON_CHECK,
     error, info, muted, bold, color, Style, success
 )
 from fullapi.config import ProjectConfig
@@ -69,7 +69,7 @@ def print_success(project_name: str):
     print(f"    {color('pip install -r', Style.CYAN)} requirements.txt")
     print(f"    {color('uvicorn', Style.CYAN)} main:app --reload")
     print()
-    print(f"  {muted(f'Docs: http://localhost:8000/docs')}")
+    print(f"  {muted('Docs: http://localhost:8000/docs')}")
     print()
 
 

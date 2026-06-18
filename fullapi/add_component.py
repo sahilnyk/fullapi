@@ -5,8 +5,8 @@ from pathlib import Path
 from string import Template
 
 from fullapi.colors import (
-    ICON_CHECK, ICON_WARNING,
-    success, warning, info, muted, bold, color, Style
+    ICON_WARNING,
+    warning, info, muted, bold, color, Style
 )
 from fullapi.prompt import show_loading_animation
 

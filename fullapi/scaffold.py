@@ -9,7 +9,7 @@ from datetime import datetime
 
 from fullapi.config import ProjectConfig
 from fullapi.colors import (
-    ICON_CHECK, ICON_CROSS, ICON_WARNING, success, error, warning, info, muted, bold, color, Style
+    ICON_CROSS, ICON_WARNING, error, warning, info, muted, bold, color, Style
 )
 from fullapi.templates import (
     main_basic, router, schema,

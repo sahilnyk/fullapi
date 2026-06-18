@@ -9,7 +9,6 @@ from unittest.mock import patch
 
 from fullapi.add_component import add_component_to_project
 from fullapi.cli import handle_add
-from fullapi.colors import warning
 
 
 class TestAddComponent:
@@ -117,12 +116,11 @@ Base = declarative_base()
         # Add router first time
         add_component_to_project("router", "Product")
         
-        # Try to add same router again
-        with patch('fullapi.add_component.print') as mock_print:
-            add_component_to_project("router", "Product")
-            
-            # Check warning was printed
-            mock_print.assert_any_call(f"  {warning('Router product.py already exists')}")
+        # Try to add same router again — file still exists (no overwrite)
+        router_mtime_before = Path("routers/product.py").stat().st_mtime
+        add_component_to_project("router", "Product")
+        # File should not have changed
+        assert Path("routers/product.py").stat().st_mtime == router_mtime_before
 
     def test_add_model_to_full_project(self):
         """Test adding a model to a full project with database."""
@@ -151,11 +149,9 @@ Base = declarative_base()
         """Test adding a model to a basic project without database."""
         self.create_basic_project()
         
-        with patch('fullapi.add_component.print') as mock_print:
-            add_component_to_project("model", "User")
-            
-            # Check warning was printed
-            mock_print.assert_any_call(f"  {warning('Project does not have database support')}")
+        # Should not create model files without db/ directory
+        add_component_to_project("model", "User")
+        assert not Path("models/user.py").exists()
 
     def test_add_model_already_exists(self):
         """Test adding a model that already exists."""
@@ -164,12 +160,10 @@ Base = declarative_base()
         # Add model first time
         add_component_to_project("model", "User")
         
-        # Try to add same model again
-        with patch('fullapi.add_component.print') as mock_print:
-            add_component_to_project("model", "User")
-            
-            # Check warning was printed
-            mock_print.assert_any_call(f"  {warning('Model user.py already exists')}")
+        # Try to add same model again — should not overwrite
+        model_mtime_before = Path("models/user.py").stat().st_mtime
+        add_component_to_project("model", "User")
+        assert Path("models/user.py").stat().st_mtime == model_mtime_before
 
     def test_add_component_invalid_project(self):
         """Test adding component to non-fullapi project."""
@@ -238,10 +232,10 @@ class TestCLIIntegration:
         
         from argparse import Namespace
         
-        with patch('fullapi.add_component.add_component_to_project') as mock_add:
+        with patch('fullapi.cli.add_component_to_project') as mock_add:
             args = Namespace(component_type="router", component_name="Product")
             handle_add(args)
-            
+
             mock_add.assert_called_once_with("router", "Product")
 
     def create_basic_project(self):

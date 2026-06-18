@@ -235,141 +235,16 @@ class CacheManager:
         key = cache_key(self.prefix, identifier)
         return delete_cache(key)
     
+    def clear(self, prefix: str) -> int:
+        """Clear all cache entries with a given prefix."""
+        return clear_cache_pattern(cache_key(prefix, "*"))
+
     def clear_all(self) -> int:
-        """Clear all cache with this prefix."""
-        pattern = cache_key(self.prefix, "*")
-        return clear_cache_pattern(pattern)
-'''
-
-REDIS_ROUTER = '''"""Redis health and management router."""
-
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Dict, Any
-from core.redis_config import redis_client, RedisConfig
-from core.redis_utils import CacheManager
-
-router = APIRouter()
-
-
-@router.get("/health", response_model=Dict[str, Any])
-def redis_health():
-    """Check Redis health status."""
-    try:
-        health_info = redis_client.health_check()
-        return health_info
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Redis health check failed: {str(e)}"
-        )
-
-
-@router.post("/clear", response_model=Dict[str, Any])
-def clear_redis_cache(prefix: str = "app"):
-    """Clear Redis cache with given prefix."""
-    try:
-        cache_manager = CacheManager(prefix)
-        deleted_count = cache_manager.clear_all()
-        return {
-            "message": f"Cleared {deleted_count} cache entries with prefix '{prefix}'",
-            "deleted_count": deleted_count
-        }
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to clear cache: {str(e)}"
-        )
-
-
-@router.get("/info", response_model=Dict[str, Any])
-def redis_info():
-    """Get Redis server information."""
-    try:
-        client = redis_client.client
-        info = client.info()
-        
-        # Return relevant information
-        return {
-            "redis_version": info.get("redis_version"),
-            "connected_clients": info.get("connected_clients"),
-            "used_memory": info.get("used_memory_human"),
-            "uptime_days": info.get("uptime_in_days"),
-            "total_commands_processed": info.get("total_commands_processed"),
-            "keyspace_hits": info.get("keyspace_hits"),
-            "keyspace_misses": info.get("keyspace_misses"),
-        }
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Failed to get Redis info: {str(e)}"
-        )
-
-
-@router.get("/config", response_model=Dict[str, Any])
-def redis_config_info():
-    """Get current Redis configuration."""
-    config = RedisConfig()
-    return {
-        "redis_url": config.get_redis_url().replace("password", "***") if "password" in config.get_redis_url() else config.get_redis_url(),
-        "redis_host": config.redis_host,
-        "redis_port": config.redis_port,
-        "redis_db": config.redis_db,
-        "redis_ssl": config.redis_ssl,
-        "redis_decode_responses": config.redis_decode_responses,
-        "redis_socket_timeout": config.redis_socket_timeout,
-        "redis_max_connections": config.redis_max_connections,
-    }
-'''
-
-REDIS_DEPS = '''"""Dependencies with Redis support."""
-
-from typing import Generator
-from sqlalchemy.orm import Session
-from db.session import get_db
-from core.redis_config import redis_client
-
-
-def get_redis_client():
-    """Get Redis client dependency."""
-    try:
-        return redis_client.client
-    except Exception:
-        # Return None if Redis is not available
-        return None
-
-
-def get_cache_manager(prefix: str = "app"):
-    """Get cache manager dependency."""
-    from core.redis_utils import CacheManager
-    return CacheManager(prefix)
-
-
-# Existing database dependency
-def get_db_session() -> Generator[Session, None, None]:
-    """Get database session."""
-    db = get_db()
-    try:
-        yield db
-    finally:
-        db.close()
+        """Clear all cache with this manager\'s prefix."""
+        return clear_cache_pattern(cache_key(self.prefix, "*"))
 '''
 
 REQUIREMENTS_REDIS = """
 # Redis caching
 redis>=5.0.0
-"""
-
-ENV_EXAMPLE_REDIS = """
-# Redis Configuration
-REDIS_URL=redis://localhost:6379/0
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_DB=0
-REDIS_PASSWORD=
-REDIS_SSL=false
-REDIS_DECODE_RESPONSES=true
-REDIS_SOCKET_TIMEOUT=5
-REDIS_SOCKET_CONNECT_TIMEOUT=5
-REDIS_HEALTH_CHECK_INTERVAL=30
-REDIS_MAX_CONNECTIONS=10
 """

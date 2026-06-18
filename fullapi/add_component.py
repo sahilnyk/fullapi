@@ -1,5 +1,6 @@
 """Add components to existing fullapi projects."""
 
+import json
 from pathlib import Path
 from string import Template
 
@@ -10,47 +11,42 @@ from fullapi.colors import (
 from fullapi.prompt import show_loading_animation
 
 
-
 def add_component_to_project(component_type: str, component_name: str) -> None:
     """Add a component (router/model) to an existing project."""
     component_name = component_name.capitalize()
-    
+
     print()
     print(f"  {bold('Adding component:')} {info(component_name)} {muted(f'({component_type})')}")
     print()
-    
+
     if component_type == "router":
         _add_router(component_name)
     elif component_type == "model":
         _add_model(component_name)
-    
+
     show_loading_animation("Finalizing component addition", 0.5)
 
 
 def _add_router(name: str) -> None:
     """Add a new router with CRUD operations."""
-    # Check project configuration
-    import json
     config_path = Path(".fullapi.json")
     has_db = False
     if config_path.exists():
         try:
             config = json.loads(config_path.read_text())
             has_db = config.get("database", "none") != "none"
-        except Exception:
+        except (json.JSONDecodeError, OSError):
             pass
 
-    # If no config, check if db/ directory exists
     if not has_db:
         has_db = Path("db").exists()
 
     template_vars = {
         "model_name": name,
         "model_name_lower": name.lower(),
-        "model_name_plural": name.lower() + "s"
+        "model_name_plural": name.lower() + "s",
     }
 
-    # Create router file
     router_path = Path(f"routers/{name.lower()}.py")
     if router_path.exists():
         print(f"  {ICON_WARNING}  {warning(f'Router {name.lower()}.py already exists')}")
@@ -58,17 +54,14 @@ def _add_router(name: str) -> None:
 
     router_path.parent.mkdir(exist_ok=True)
 
-    # Use appropriate template based on database availability
     if has_db:
         router_content = Template(_get_router_template_with_db()).substitute(template_vars)
     else:
         router_content = Template(_get_router_template_simple()).substitute(template_vars)
 
     router_path.write_text(router_content)
-
     _show_progress(f"routers/{name.lower()}.py")
 
-    # Create schema file if it doesn't exist
     schema_path = Path(f"schemas/{name.lower()}.py")
     if not schema_path.exists():
         schema_path.parent.mkdir(exist_ok=True)
@@ -76,7 +69,6 @@ def _add_router(name: str) -> None:
         schema_path.write_text(schema_content)
         _show_progress(f"schemas/{name.lower()}.py")
 
-    # Update main.py to include the new router
     _update_main_py(name)
 
 
@@ -85,50 +77,34 @@ def _add_model(name: str) -> None:
     template_vars = {
         "model_name": name,
         "model_name_lower": name.lower(),
-        "model_name_plural": name.lower() + "s"
+        "model_name_plural": name.lower() + "s",
     }
-    
-    # Check if project has database support
+
     if not Path("db").exists():
         print(f"  {ICON_WARNING}  {warning('Project does not have database support')}")
         print(f"  {info('Tip:')} Create a new project with --db flag or use 'fullapi add router' first")
         return
-    
-    # Create model file
+
     model_path = Path(f"models/{name.lower()}.py")
     if model_path.exists():
         print(f"  {ICON_WARNING}  {warning(f'Model {name.lower()}.py already exists')}")
         return
-    
+
     model_path.parent.mkdir(exist_ok=True)
-    model_content = Template(_get_model_template()).substitute(template_vars)
-    model_path.write_text(model_content)
-    
+    model_path.write_text(Template(_get_model_template()).substitute(template_vars))
     _show_progress(f"models/{name.lower()}.py")
-    
-    # Create schema file
+
     schema_path = Path(f"schemas/{name.lower()}.py")
-    if schema_path.exists():
-        print(f"  {ICON_WARNING}  {warning(f'Schema {name.lower()}.py already exists')}")
-        return
-    
-    schema_path.parent.mkdir(exist_ok=True)
-    schema_content = Template(_get_schema_template()).substitute(template_vars)
-    schema_path.write_text(schema_content)
-    
-    _show_progress(f"schemas/{name.lower()}.py")
-    
-    # Create CRUD file
+    if not schema_path.exists():
+        schema_path.parent.mkdir(exist_ok=True)
+        schema_path.write_text(Template(_get_schema_template()).substitute(template_vars))
+        _show_progress(f"schemas/{name.lower()}.py")
+
     crud_path = Path(f"crud/{name.lower()}.py")
-    if crud_path.exists():
-        print(f"  {ICON_WARNING}  {warning(f'CRUD {name.lower()}.py already exists')}")
-        return
-    
-    crud_path.parent.mkdir(exist_ok=True)
-    crud_content = Template(_get_crud_template()).substitute(template_vars)
-    crud_path.write_text(crud_content)
-    
-    _show_progress(f"crud/{name.lower()}.py")
+    if not crud_path.exists():
+        crud_path.parent.mkdir(exist_ok=True)
+        crud_path.write_text(Template(_get_crud_template()).substitute(template_vars))
+        _show_progress(f"crud/{name.lower()}.py")
 
 
 def _update_main_py(name: str) -> None:
@@ -136,197 +112,164 @@ def _update_main_py(name: str) -> None:
     main_path = Path("main.py")
     if not main_path.exists():
         return
-    
+
     content = main_path.read_text()
-    
-    # Check if router is already imported
+
     if f"from routers import {name.lower()}" in content:
         return
-    
-    # Add import
+
     import_line = f"from routers import {name.lower()}"
+    lines = content.split("\n")
+
+    # Add import
     if "from routers import" in content:
-        # Add to existing import
-        lines = content.split('\n')
         for i, line in enumerate(lines):
             if line.strip().startswith("from routers import"):
                 lines[i] = line.rstrip() + f", {name.lower()}"
                 break
-        content = '\n'.join(lines)
     else:
-        # Add new import after other imports
-        lines = content.split('\n')
         for i, line in enumerate(lines):
             if line.strip().startswith("from fastapi import"):
-                # Insert after FastAPI imports
                 lines.insert(i + 1, import_line)
                 break
-        content = '\n'.join(lines)
-    
-    # Add router to app
-    router_line = f"app.include_router({name.lower()}.router, prefix=\"/{name.lower()}\", tags=[\"{name.lower()}\"])"
+
+    content = "\n".join(lines)
+
+    router_line = f'app.include_router({name.lower()}.router, prefix="/{name.lower()}", tags=["{name.lower()}"])'
+    lines = content.split("\n")
+
     if "app.include_router" in content:
-        # Add before the last router
-        lines = content.split('\n')
         for i, line in enumerate(lines):
-            if "app.include_router" in line and i > 0:
+            if "app.include_router" in line:
                 lines.insert(i, router_line)
                 break
-        content = '\n'.join(lines)
     else:
-        # Add after app creation
-        lines = content.split('\n')
         for i, line in enumerate(lines):
             if "app = FastAPI" in line:
                 lines.insert(i + 1, "")
                 lines.insert(i + 2, router_line)
                 break
-        content = '\n'.join(lines)
-    
-    main_path.write_text(content)
+
+    main_path.write_text("\n".join(lines))
     _show_progress("main.py (updated)")
 
 
-def _show_progress(filename: str):
+def _show_progress(filename: str) -> None:
     """Show progress for component addition."""
     print(f"  {color('✓', Style.GREEN)} {muted(filename)}")
 
 
 def _get_router_template_simple() -> str:
-    """Get template for router file without database."""
+    """Get template for router without database."""
     return '''"""${model_name} router."""
 
 from fastapi import APIRouter, HTTPException
-from typing import List
-from schemas.${model_name_lower} import ${model_name}, ${model_name}Create, ${model_name}Update
+from typing import List, Dict
+from schemas.${model_name_lower} import ${model_name}Response, ${model_name}Create, ${model_name}Update
 
 router = APIRouter()
 
-# In-memory storage for demonstration
-${model_name_lower}_storage = {}
-${model_name_lower}_id_counter = 1
+_storage: Dict[int, dict] = {}
+_id_counter: List[int] = [1]
 
 
-@router.get("/", response_model=List[${model_name}])
-def read_${model_name_plural}(skip: int = 0, limit: int = 100):
+@router.get("/", response_model=List[${model_name}Response])
+def list_${model_name_plural}(skip: int = 0, limit: int = 100):
     """Retrieve ${model_name_plural}."""
-    items = list(${model_name_lower}_storage.values())
-    return items[skip:skip + limit]
+    items = list(_storage.values())
+    return items[skip : skip + limit]
 
 
-@router.post("/", response_model=${model_name})
-def create_${model_name_lower}(${model_name_lower}: ${model_name}Create):
+@router.post("/", response_model=${model_name}Response, status_code=201)
+def create_${model_name_lower}(payload: ${model_name}Create):
     """Create a new ${model_name_lower}."""
-    global ${model_name_lower}_id_counter
-    item_id = ${model_name_lower}_id_counter
-    ${model_name_lower}_id_counter += 1
-
-    item = ${model_name}(id=item_id, **${model_name_lower}.dict())
-    ${model_name_lower}_storage[item_id] = item
+    item_id = _id_counter[0]
+    _id_counter[0] += 1
+    item = {"id": item_id, **payload.model_dump()}
+    _storage[item_id] = item
     return item
 
 
-@router.get("/{${model_name_lower}_id}", response_model=${model_name})
-def read_${model_name_lower}(${model_name_lower}_id: int):
-    """Get a specific ${model_name_lower} by ID."""
-    if ${model_name_lower}_id not in ${model_name_lower}_storage:
+@router.get("/{item_id}", response_model=${model_name}Response)
+def get_${model_name_lower}(item_id: int):
+    """Get a ${model_name_lower} by ID."""
+    if item_id not in _storage:
         raise HTTPException(status_code=404, detail="${model_name} not found")
-    return ${model_name_lower}_storage[${model_name_lower}_id]
+    return _storage[item_id]
 
 
-@router.put("/{${model_name_lower}_id}", response_model=${model_name})
-def update_${model_name_lower}(${model_name_lower}_id: int, ${model_name_lower}: ${model_name}Update):
+@router.patch("/{item_id}", response_model=${model_name}Response)
+def update_${model_name_lower}(item_id: int, payload: ${model_name}Update):
     """Update a ${model_name_lower}."""
-    if ${model_name_lower}_id not in ${model_name_lower}_storage:
+    if item_id not in _storage:
         raise HTTPException(status_code=404, detail="${model_name} not found")
-
-    stored = ${model_name_lower}_storage[${model_name_lower}_id]
-    update_data = ${model_name_lower}.dict(exclude_unset=True)
-    updated = stored.copy(update=update_data)
-    ${model_name_lower}_storage[${model_name_lower}_id] = updated
-    return updated
+    item = _storage[item_id]
+    item.update({k: v for k, v in payload.model_dump(exclude_unset=True).items()})
+    _storage[item_id] = item
+    return item
 
 
-@router.delete("/{${model_name_lower}_id}")
-def delete_${model_name_lower}(${model_name_lower}_id: int):
+@router.delete("/{item_id}")
+def delete_${model_name_lower}(item_id: int):
     """Delete a ${model_name_lower}."""
-    if ${model_name_lower}_id not in ${model_name_lower}_storage:
+    if item_id not in _storage:
         raise HTTPException(status_code=404, detail="${model_name} not found")
-    del ${model_name_lower}_storage[${model_name_lower}_id]
+    del _storage[item_id]
     return {"message": "${model_name} deleted successfully"}
 '''
 
 
 def _get_router_template_with_db() -> str:
-    """Get template for router file with database."""
+    """Get template for router with database."""
     return '''"""${model_name} router."""
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-
 from db.session import get_db
-from schemas.${model_name_lower} import ${model_name}, ${model_name}Create, ${model_name}Update
+from schemas.${model_name_lower} import ${model_name}Response, ${model_name}Create, ${model_name}Update
 from crud.${model_name_lower} import ${model_name_lower}_crud
 
 router = APIRouter()
 
 
-@router.get("/", response_model=List[${model_name}])
-def read_${model_name_plural}(
-    skip: int = 0,
-    limit: int = 100,
-    db: Session = Depends(get_db)
-):
+@router.get("/", response_model=List[${model_name}Response])
+def list_${model_name_plural}(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Retrieve ${model_name_plural}."""
-    ${model_name_plural} = ${model_name_lower}_crud.get_multi(db, skip=skip, limit=limit)
-    return ${model_name_plural}
+    return ${model_name_lower}_crud.get_all(db, skip=skip, limit=limit)
 
 
-@router.post("/", response_model=${model_name})
-def create_${model_name_lower}(
-    ${model_name_lower}: ${model_name}Create,
-    db: Session = Depends(get_db)
-):
+@router.post("/", response_model=${model_name}Response, status_code=201)
+def create_${model_name_lower}(payload: ${model_name}Create, db: Session = Depends(get_db)):
     """Create a new ${model_name_lower}."""
-    return ${model_name_lower}_crud.create(db=db, obj_in=${model_name_lower})
+    return ${model_name_lower}_crud.create(db, obj_in=payload.model_dump())
 
 
-@router.get("/{${model_name_lower}_id}", response_model=${model_name})
-def read_${model_name_lower}(
-    ${model_name_lower}_id: int,
-    db: Session = Depends(get_db)
-):
-    """Get a specific ${model_name_lower} by ID."""
-    db_${model_name_lower} = ${model_name_lower}_crud.get(db, id=${model_name_lower}_id)
-    if db_${model_name_lower} is None:
+@router.get("/{item_id}", response_model=${model_name}Response)
+def get_${model_name_lower}(item_id: int, db: Session = Depends(get_db)):
+    """Get a ${model_name_lower} by ID."""
+    item = ${model_name_lower}_crud.get(db, item_id)
+    if not item:
         raise HTTPException(status_code=404, detail="${model_name} not found")
-    return db_${model_name_lower}
+    return item
 
 
-@router.put("/{${model_name_lower}_id}", response_model=${model_name})
-def update_${model_name_lower}(
-    ${model_name_lower}_id: int,
-    ${model_name_lower}: ${model_name}Update,
-    db: Session = Depends(get_db)
-):
+@router.patch("/{item_id}", response_model=${model_name}Response)
+def update_${model_name_lower}(item_id: int, payload: ${model_name}Update, db: Session = Depends(get_db)):
     """Update a ${model_name_lower}."""
-    db_${model_name_lower} = ${model_name_lower}_crud.get(db, id=${model_name_lower}_id)
-    if db_${model_name_lower} is None:
+    item = ${model_name_lower}_crud.get(db, item_id)
+    if not item:
         raise HTTPException(status_code=404, detail="${model_name} not found")
-    return ${model_name_lower}_crud.update(db=db, db_obj=db_${model_name_lower}, obj_in=${model_name_lower})
+    return ${model_name_lower}_crud.update(db, db_obj=item, obj_in=payload.model_dump(exclude_unset=True))
 
 
-@router.delete("/{${model_name_lower}_id}")
-def delete_${model_name_lower}(
-    ${model_name_lower}_id: int,
-    db: Session = Depends(get_db)
-):
+@router.delete("/{item_id}")
+def delete_${model_name_lower}(item_id: int, db: Session = Depends(get_db)):
     """Delete a ${model_name_lower}."""
-    db_${model_name_lower} = ${model_name_lower}_crud.get(db, id=${model_name_lower}_id)
-    if db_${model_name_lower} is None:
+    item = ${model_name_lower}_crud.get(db, item_id)
+    if not item:
         raise HTTPException(status_code=404, detail="${model_name} not found")
-    ${model_name_lower}_crud.remove(db=db, id=${model_name_lower}_id)
+    ${model_name_lower}_crud.delete(db, item_id)
     return {"message": "${model_name} deleted successfully"}
 '''
 
@@ -340,12 +283,11 @@ from db.base import Base
 
 
 class ${model_name}(Base):
-    """${model_name} model."""
+    """${model_name} database model."""
     __tablename__ = "${model_name_plural}"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
-    # Add more fields as needed
+    name = Column(String, index=True, nullable=False)
 '''
 
 
@@ -358,28 +300,21 @@ from pydantic import BaseModel
 
 
 class ${model_name}Base(BaseModel):
-    """Base ${model_name} schema."""
     name: str
-    # Add more fields as needed
 
 
 class ${model_name}Create(${model_name}Base):
-    """${model_name} creation schema."""
     pass
 
 
-class ${model_name}Update(${model_name}Base):
-    """${model_name} update schema."""
+class ${model_name}Update(BaseModel):
     name: Optional[str] = None
-    # Add more fields as needed
 
 
-class ${model_name}(${model_name}Base):
-    """${model_name} response schema."""
+class ${model_name}Response(${model_name}Base):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 '''
 
 
@@ -387,66 +322,43 @@ def _get_crud_template() -> str:
     """Get template for CRUD file."""
     return '''"""${model_name} CRUD operations."""
 
-from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union
-from fastapi.encoders import jsonable_encoder
-from pydantic import BaseModel
+from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
-
 from models.${model_name_lower} import ${model_name}
-from schemas.${model_name_lower} import ${model_name}Create, ${model_name}Update
 
 
-class CRUD${model_name}(Generic[TypeVar("ModelType", bound=${model_name})]):
+class ${model_name}CRUD:
     """CRUD operations for ${model_name}."""
 
-    def get(self, db: Session, id: Any) -> Optional[${model_name}]:
-        """Get ${model_name_lower} by ID."""
+    def get(self, db: Session, id: int) -> Optional[${model_name}]:
         return db.query(${model_name}).filter(${model_name}.id == id).first()
 
-    def get_multi(
-        self, db: Session, *, skip: int = 0, limit: int = 100
-    ) -> List[${model_name}]:
-        """Get multiple ${model_name_plural}."""
+    def get_all(self, db: Session, skip: int = 0, limit: int = 100) -> List[${model_name}]:
         return db.query(${model_name}).offset(skip).limit(limit).all()
 
-    def create(self, db: Session, *, obj_in: ${model_name}Create) -> ${model_name}:
-        """Create new ${model_name_lower}."""
-        obj_in_data = jsonable_encoder(obj_in)
-        db_obj = ${model_name}(**obj_in_data)
-        db.add(db_obj)
+    def create(self, db: Session, obj_in: Dict[str, Any]) -> ${model_name}:
+        obj = ${model_name}(**obj_in)
+        db.add(obj)
         db.commit()
-        db.refresh(db_obj)
-        return db_obj
-
-    def update(
-        self,
-        db: Session,
-        *,
-        db_obj: ${model_name},
-        obj_in: Union[${model_name}Update, Dict[str, Any]]
-    ) -> ${model_name}:
-        """Update ${model_name_lower}."""
-        obj_data = jsonable_encoder(db_obj)
-        if isinstance(obj_in, dict):
-            update_data = obj_in
-        else:
-            update_data = obj_in.dict(exclude_unset=True)
-        for field in obj_data:
-            if field in update_data:
-                setattr(db_obj, field, update_data[field])
-        db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
-        return db_obj
-
-    def remove(self, db: Session, *, id: int) -> ${model_name}:
-        """Remove ${model_name_lower}."""
-        obj = db.query(${model_name}).get(id)
-        db.delete(obj)
-        db.commit()
+        db.refresh(obj)
         return obj
 
+    def update(self, db: Session, db_obj: ${model_name}, obj_in: Dict[str, Any]) -> ${model_name}:
+        for key, value in obj_in.items():
+            if hasattr(db_obj, key):
+                setattr(db_obj, key, value)
+        db.commit()
+        db.refresh(db_obj)
+        return db_obj
 
-# Create a singleton instance
-${model_name_lower}_crud = CRUD${model_name}()
+    def delete(self, db: Session, id: int) -> bool:
+        obj = self.get(db, id)
+        if not obj:
+            return False
+        db.delete(obj)
+        db.commit()
+        return True
+
+
+${model_name_lower}_crud = ${model_name}CRUD()
 '''

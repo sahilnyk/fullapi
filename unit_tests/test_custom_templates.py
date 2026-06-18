@@ -235,6 +235,7 @@ app = FastAPI(title="${project_name}")
 app.include_router(health.router, tags=["health"])
 """)
         
+        (template_dir / "routers").mkdir()
         (template_dir / "routers" / "__init__.py").write_text("")
         (template_dir / "routers" / "health.py").write_text("""# Health check router
 from fastapi import APIRouter
@@ -245,7 +246,10 @@ router = APIRouter()
 def health_check():
     return {"status": "healthy"}
 """)
-        
+
+        (template_dir / "requirements.txt").write_text("fastapi\nuvicorn")
+
+        (template_dir / "core").mkdir()
         (template_dir / "core" / "__init__.py").write_text("")
         (template_dir / "core" / "config.py").write_text("""# Configuration
 from pydantic_settings import BaseSettings
@@ -279,6 +283,16 @@ class Settings(BaseSettings):
 
 class TestCustomTemplateUtilities:
     """Test custom template utility functions."""
+
+    def setup_method(self):
+        """Set up test environment."""
+        import tempfile
+        self.test_dir = Path(tempfile.mkdtemp())
+
+    def teardown_method(self):
+        """Clean up test environment."""
+        import shutil
+        shutil.rmtree(self.test_dir, ignore_errors=True)
 
     def test_list_available_templates(self):
         """Test listing available templates information."""

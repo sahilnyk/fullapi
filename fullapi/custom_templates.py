@@ -34,8 +34,8 @@ class CustomTemplateManager:
         return self.templates.get(name)
     
     def list_templates(self) -> Dict[str, str]:
-        """Get all available templates."""
-        return self.templates.copy()
+        """Get all available templates (all file types, keyed by filename)."""
+        return self.get_template_files()
     
     def validate_template_structure(self) -> bool:
         """Validate that template directory has required structure."""

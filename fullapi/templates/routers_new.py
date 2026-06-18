@@ -23,7 +23,7 @@ def health_check():
         "app_version": settings.APP_VERSION,
         "environment": settings.ENVIRONMENT,
     }
-    
+
     return success_response(
         data=health_data,
         message="Application is healthy",
@@ -50,7 +50,7 @@ def root():
 # routers/health.py - Enhanced with StandardResponse and database check
 HEALTH_ROUTER = '''"""Health check router with database connectivity check."""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from dependencies.db import get_db
@@ -69,14 +69,13 @@ router = APIRouter()
 def health_check(db: Session = Depends(get_db)):
     """Check if the application and database are healthy."""
     try:
-        # Test database connection
         db.execute(text("SELECT 1"))
         db_status = "healthy"
         db_message = "Database connection successful"
     except Exception as e:
         db_status = "unhealthy"
         db_message = f"Database connection failed: {str(e)}"
-    
+
     health_data = {
         "app_name": settings.APP_NAME,
         "app_version": settings.APP_VERSION,
@@ -86,7 +85,7 @@ def health_check(db: Session = Depends(get_db)):
             "message": db_message,
         },
     }
-    
+
     return success_response(
         data=health_data,
         message="Application is healthy" if db_status == "healthy" else "Database issues detected",
@@ -115,7 +114,6 @@ USERS_ROUTER_NO_AUTH = '''"""Users router with full CRUD operations."""
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
-from typing import Optional
 from dependencies.db import get_db
 from core.responses import StandardResponse, PaginatedResponse, success_response
 from exceptions.errors import NotFoundError, ConflictError
@@ -137,14 +135,11 @@ def create_user(
     db: Session = Depends(get_db),
 ):
     """Create a new user account."""
-    existing = user_crud.get_by_email(db, user_in.email)
-    if existing:
-        raise ConflictError(f"User with email '{user_in.email}' already exists")
+    if user_crud.get_by_email(db, user_in.email):
+        raise ConflictError(f"User with email \'{user_in.email}\' already exists")
 
-    if hasattr(user_in, 'username'):
-        existing_username = user_crud.get_by_username(db, user_in.username)
-        if existing_username:
-            raise ConflictError(f"User with username '{user_in.username}' already exists")
+    if user_crud.get_by_username(db, user_in.username):
+        raise ConflictError(f"User with username \'{user_in.username}\' already exists")
 
     user = user_crud.create(db, obj_in=user_in.model_dump())
 
@@ -206,13 +201,12 @@ def update_user(
     user_in: UserUpdate,
     db: Session = Depends(get_db),
 ):
-    """Update a user's information."""
+    """Update a user\'s information."""
     user = user_crud.get(db, user_id)
     if not user:
         raise NotFoundError("User", user_id)
 
-    update_data = user_in.model_dump(exclude_unset=True)
-    updated_user = user_crud.update(db, db_obj=user, obj_in=update_data)
+    updated_user = user_crud.update(db, db_obj=user, obj_in=user_in.model_dump(exclude_unset=True))
 
     return success_response(
         data=updated_user,
@@ -242,12 +236,11 @@ def delete_user(
     )
 '''
 
-# routers/users.py - Full CRUD with StandardResponse and proper patterns (with auth)
+# routers/users.py - Full CRUD with auth
 USERS_ROUTER = '''"""Users router with full CRUD operations."""
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
-from typing import Optional
 from dependencies.db import get_db
 from dependencies.auth import get_current_user
 from core.responses import StandardResponse, PaginatedResponse, success_response
@@ -271,20 +264,14 @@ def create_user(
     db: Session = Depends(get_db),
 ):
     """Create a new user account."""
-    # Check if user with email already exists
-    existing = user_crud.get_by_email(db, user_in.email)
-    if existing:
-        raise ConflictError(f"User with email '{user_in.email}' already exists")
-    
-    # Check if user with username already exists
-    if hasattr(user_in, 'username'):
-        existing_username = user_crud.get_by_username(db, user_in.username)
-        if existing_username:
-            raise ConflictError(f"User with username '{user_in.username}' already exists")
-    
-    # Create user
+    if user_crud.get_by_email(db, user_in.email):
+        raise ConflictError(f"User with email \'{user_in.email}\' already exists")
+
+    if user_crud.get_by_username(db, user_in.username):
+        raise ConflictError(f"User with username \'{user_in.username}\' already exists")
+
     user = user_crud.create(db, obj_in=user_in.model_dump())
-    
+
     return success_response(
         data=user,
         message="User created successfully",
@@ -306,7 +293,7 @@ def list_users(
     """Get a paginated list of all users."""
     users = user_crud.get_all(db, skip=skip, limit=limit)
     total = user_crud.count(db)
-    
+
     return PaginatedResponse.create(
         data=users,
         total=total,
@@ -319,12 +306,12 @@ def list_users(
     "/me",
     response_model=StandardResponse[UserResponse],
     summary="Get current user",
-    description="Get the currently authenticated user's information",
+    description="Get the currently authenticated user\'s information",
 )
 def get_current_user_info(
     current_user: User = Depends(get_current_user),
 ):
-    """Get the current authenticated user's information."""
+    """Get the current authenticated user\'s information."""
     return success_response(
         data=current_user,
         message="Current user retrieved successfully",
@@ -345,7 +332,7 @@ def get_user(
     user = user_crud.get(db, user_id)
     if not user:
         raise NotFoundError("User", user_id)
-    
+
     return success_response(
         data=user,
         message="User retrieved successfully",
@@ -356,7 +343,7 @@ def get_user(
     "/{user_id}",
     response_model=StandardResponse[UserResponse],
     summary="Update user",
-    description="Update user information (can only update own profile unless admin)",
+    description="Update user information (own profile only, unless admin)",
 )
 def update_user(
     user_id: int,
@@ -364,19 +351,16 @@ def update_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Update a user's information."""
+    """Update a user\'s information."""
     user = user_crud.get(db, user_id)
     if not user:
         raise NotFoundError("User", user_id)
-    
-    # Check if user is updating their own profile or is admin
+
     if current_user.id != user_id and current_user.role != "admin":
         raise ForbiddenError("You can only update your own profile")
-    
-    # Update user
-    update_data = user_in.model_dump(exclude_unset=True)
-    updated_user = user_crud.update(db, db_obj=user, obj_in=update_data)
-    
+
+    updated_user = user_crud.update(db, db_obj=user, obj_in=user_in.model_dump(exclude_unset=True))
+
     return success_response(
         data=updated_user,
         message="User updated successfully",
@@ -387,7 +371,7 @@ def update_user(
     "/{user_id}",
     response_model=StandardResponse,
     summary="Delete user",
-    description="Soft delete a user (can only delete own account unless admin)",
+    description="Soft delete a user (own account only, unless admin)",
 )
 def delete_user(
     user_id: int,
@@ -398,14 +382,12 @@ def delete_user(
     user = user_crud.get(db, user_id)
     if not user:
         raise NotFoundError("User", user_id)
-    
-    # Check if user is deleting their own account or is admin
+
     if current_user.id != user_id and current_user.role != "admin":
         raise ForbiddenError("You can only delete your own account")
-    
-    # Soft delete user
+
     user_crud.delete(db, user_id)
-    
+
     return success_response(
         message="User deleted successfully",
     )
@@ -449,27 +431,22 @@ def login(
     db: Session = Depends(get_db),
 ):
     """Authenticate user and return JWT tokens."""
-    # Try to find user by email or username
     user = user_crud.get_by_email(db, form_data.username)
     if not user:
         user = user_crud.get_by_username(db, form_data.username)
-    
+
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise UnauthorizedError("Incorrect email/username or password")
-    
-    # Create tokens
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+
     access_token = create_access_token(
         data={"sub": str(user.id)},
-        expires_delta=access_token_expires,
+        expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
-    
-    refresh_token_expires = timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     refresh_token = create_refresh_token(
         data={"sub": str(user.id)},
-        expires_delta=refresh_token_expires,
+        expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
     )
-    
+
     return success_response(
         data=TokenResponse(
             access_token=access_token,
@@ -492,20 +469,14 @@ def register(
     db: Session = Depends(get_db),
 ):
     """Register a new user account."""
-    # Check if user with email already exists
-    existing_email = user_crud.get_by_email(db, user_in.email)
-    if existing_email:
-        raise ConflictError(f"User with email '{user_in.email}' already exists")
-    
-    # Check if user with username already exists
-    if hasattr(user_in, 'username'):
-        existing_username = user_crud.get_by_username(db, user_in.username)
-        if existing_username:
-            raise ConflictError(f"User with username '{user_in.username}' already exists")
-    
-    # Create user (password hashing handled by UserCRUD)
+    if user_crud.get_by_email(db, user_in.email):
+        raise ConflictError(f"User with email \'{user_in.email}\' already exists")
+
+    if user_crud.get_by_username(db, user_in.username):
+        raise ConflictError(f"User with username \'{user_in.username}\' already exists")
+
     user = user_crud.create(db, obj_in=user_in.model_dump())
-    
+
     return success_response(
         data=user,
         message="User registered successfully",
@@ -523,40 +494,34 @@ def refresh_token(
     db: Session = Depends(get_db),
 ):
     """Refresh an expired access token using a refresh token."""
-    # Verify refresh token
     payload = verify_token(token_data.refresh_token)
     if not payload:
         raise UnauthorizedError("Invalid or expired refresh token")
-    
+
     if payload.get("type") != "refresh":
         raise UnauthorizedError("Invalid token type")
-    
+
     user_id = payload.get("sub")
     if not user_id:
         raise UnauthorizedError("Invalid token payload")
-    
-    # Check if user still exists
+
     user = user_crud.get(db, int(user_id))
     if not user:
         raise UnauthorizedError("User no longer exists")
-    
-    # Create new tokens
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+
     access_token = create_access_token(
         data={"sub": str(user.id)},
-        expires_delta=access_token_expires,
+        expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
-    
-    refresh_token_expires = timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    refresh_token = create_refresh_token(
+    new_refresh_token = create_refresh_token(
         data={"sub": str(user.id)},
-        expires_delta=refresh_token_expires,
+        expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
     )
-    
+
     return success_response(
         data=TokenResponse(
             access_token=access_token,
-            refresh_token=refresh_token,
+            refresh_token=new_refresh_token,
             token_type="bearer",
         ),
         message="Token refreshed successfully",
@@ -572,11 +537,7 @@ def refresh_token(
 def logout(
     current_user: User = Depends(get_current_user),
 ):
-    """Logout the current user.
-    
-    Note: JWT tokens are stateless, so logout is handled client-side
-    by discarding the tokens. This endpoint is provided for API completeness.
-    """
+    """Logout the current user. JWT tokens are stateless — discard tokens client-side."""
     return success_response(
         message="Logout successful. Please discard your tokens.",
     )
@@ -585,7 +546,7 @@ def logout(
 # routers/redis.py - Redis management endpoints
 REDIS_ROUTER = '''"""Redis management router."""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends
 from dependencies.cache import get_redis_client, get_cache_manager
 from core.responses import StandardResponse, success_response
 from core.redis_utils import CacheManager
@@ -606,12 +567,8 @@ def redis_health(
 ):
     """Check Redis connection health."""
     try:
-        # Ping Redis
         redis_client.ping()
-        
-        # Get Redis info
         info = redis_client.info()
-        
         health_data = {
             "status": "healthy",
             "version": info.get("redis_version"),
@@ -619,7 +576,6 @@ def redis_health(
             "used_memory_human": info.get("used_memory_human"),
             "uptime_in_seconds": info.get("uptime_in_seconds"),
         }
-        
         return success_response(
             data=health_data,
             message="Redis is healthy",
@@ -640,9 +596,8 @@ def clear_cache(
 ):
     """Clear all cache entries with a specific prefix."""
     count = cache.clear(prefix)
-    
     return success_response(
-        message=f"Cleared {count} cache entries with prefix '{prefix}'",
+        message=f"Cleared {count} cache entries with prefix \'{prefix}\'",
     )
 
 
@@ -657,20 +612,17 @@ def cache_stats(
 ):
     """Get Redis cache statistics."""
     info = redis_client.info()
-    
+    hits = info.get("keyspace_hits", 0)
+    misses = info.get("keyspace_misses", 0)
+    total = hits + misses
     stats = {
-        "keyspace_hits": info.get("keyspace_hits", 0),
-        "keyspace_misses": info.get("keyspace_misses", 0),
+        "keyspace_hits": hits,
+        "keyspace_misses": misses,
+        "hit_rate_percent": round(hits / total * 100, 2) if total > 0 else 0,
         "used_memory_human": info.get("used_memory_human"),
         "total_connections_received": info.get("total_connections_received"),
         "total_commands_processed": info.get("total_commands_processed"),
     }
-    
-    # Calculate hit rate
-    total = stats["keyspace_hits"] + stats["keyspace_misses"]
-    hit_rate = (stats["keyspace_hits"] / total * 100) if total > 0 else 0
-    stats["hit_rate_percent"] = round(hit_rate, 2)
-    
     return success_response(
         data=stats,
         message="Cache statistics retrieved successfully",

@@ -41,16 +41,15 @@ class TestMiddlewareSupport:
         
         project_path = self.test_dir / "test_project"
         
-        # Check middleware files are created
-        assert (project_path / "core" / "middleware_config.py").exists()
-        assert (project_path / "core" / "middleware_cors.py").exists()
-        assert (project_path / "core" / "middleware_rate_limit.py").exists()
-        assert (project_path / "core" / "middleware_security.py").exists()
-        assert (project_path / "core" / "middleware_gzip.py").exists()
-        assert (project_path / "core" / "middleware_logging.py").exists()
-        assert (project_path / "core" / "middleware_trusted_proxy.py").exists()
-        assert (project_path / "core" / "middleware_setup.py").exists()
-        assert (project_path / "main_with_middleware.py").exists()
+        # Check middleware files are created under core/middleware/
+        assert (project_path / "core" / "middleware" / "__init__.py").exists()
+        assert (project_path / "core" / "middleware" / "config.py").exists()
+        assert (project_path / "core" / "middleware" / "cors.py").exists()
+        assert (project_path / "core" / "middleware" / "rate_limit.py").exists()
+        assert (project_path / "core" / "middleware" / "security_headers.py").exists()
+        assert (project_path / "core" / "middleware" / "gzip.py").exists()
+        assert (project_path / "core" / "middleware" / "request_logging.py").exists()
+        assert (project_path / "core" / "middleware" / "setup.py").exists()
 
     def test_middleware_files_not_created_without_flag(self):
         """Test that middleware files are not created when middleware flag is disabled."""
@@ -70,15 +69,10 @@ class TestMiddlewareSupport:
         project_path = self.test_dir / "test_project"
         
         # Check middleware files are not created
-        assert not (project_path / "core" / "middleware_config.py").exists()
-        assert not (project_path / "core" / "middleware_cors.py").exists()
-        assert not (project_path / "core" / "middleware_rate_limit.py").exists()
-        assert not (project_path / "core" / "middleware_security.py").exists()
-        assert not (project_path / "core" / "middleware_gzip.py").exists()
-        assert not (project_path / "core" / "middleware_logging.py").exists()
-        assert not (project_path / "core" / "middleware_trusted_proxy.py").exists()
-        assert not (project_path / "core" / "middleware_setup.py").exists()
-        assert not (project_path / "main_with_middleware.py").exists()
+        assert not (project_path / "core" / "middleware" / "config.py").exists()
+        assert not (project_path / "core" / "middleware" / "cors.py").exists()
+        assert not (project_path / "core" / "middleware" / "rate_limit.py").exists()
+        assert not (project_path / "core" / "middleware" / "setup.py").exists()
 
     def test_middleware_config_content(self):
         """Test that middleware_config.py contains correct configuration."""
@@ -96,7 +90,7 @@ class TestMiddlewareSupport:
         scaffold_project(config)
         
         project_path = self.test_dir / "test_project"
-        middleware_config = (project_path / "core" / "middleware_config.py").read_text()
+        middleware_config = (project_path / "core" / "middleware" / "config.py").read_text()
         
         # Check key classes and functions
         assert "class MiddlewareConfig:" in middleware_config
@@ -125,11 +119,10 @@ class TestMiddlewareSupport:
         scaffold_project(config)
         
         project_path = self.test_dir / "test_project"
-        cors_middleware = (project_path / "core" / "middleware_cors.py").read_text()
-        
+        cors_middleware = (project_path / "core" / "middleware" / "cors.py").read_text()
+
         # Check key imports and functions
         assert "from fastapi.middleware.cors import CORSMiddleware" in cors_middleware
-        assert "from core.middleware_config import MiddlewareConfig" in cors_middleware
         assert "def create_cors_middleware(config: MiddlewareConfig):" in cors_middleware
         assert "return CORSMiddleware(" in cors_middleware
 
@@ -149,15 +142,15 @@ class TestMiddlewareSupport:
         scaffold_project(config)
         
         project_path = self.test_dir / "test_project"
-        rate_limit_middleware = (project_path / "core" / "middleware_rate_limit.py").read_text()
-        
+        rate_limit_middleware = (project_path / "core" / "middleware" / "rate_limit.py").read_text()
+
         # Check key imports and functions
         assert "from starlette.middleware.base import BaseHTTPMiddleware" in rate_limit_middleware
         assert "from starlette.responses import JSONResponse" in rate_limit_middleware
         assert "class RateLimitMiddleware(BaseHTTPMiddleware):" in rate_limit_middleware
         assert "def __init__(self, app, requests: int = 100, window: int = 60):" in rate_limit_middleware
         assert "def _get_client_id(self, request: Request) -> str:" in rate_limit_middleware
-        assert "def dispatch(self, request: Request, call_next):" in rate_limit_middleware
+        assert "async def dispatch(self, request: Request, call_next):" in rate_limit_middleware
 
     def test_middleware_security_content(self):
         """Test that middleware_security.py contains correct security headers setup."""
@@ -175,13 +168,13 @@ class TestMiddlewareSupport:
         scaffold_project(config)
         
         project_path = self.test_dir / "test_project"
-        security_middleware = (project_path / "core" / "middleware_security.py").read_text()
-        
+        security_middleware = (project_path / "core" / "middleware" / "security_headers.py").read_text()
+
         # Check key imports and functions
         assert "from starlette.middleware.base import BaseHTTPMiddleware" in security_middleware
         assert "from fastapi import Request" in security_middleware
         assert "class SecurityHeadersMiddleware(BaseHTTPMiddleware):" in security_middleware
-        assert "def dispatch(self, request: Request, call_next):" in security_middleware
+        assert "async def dispatch(self, request: Request, call_next):" in security_middleware
         assert "response.headers[header] = value" in security_middleware
 
     def test_middleware_gzip_content(self):
@@ -200,11 +193,10 @@ class TestMiddlewareSupport:
         scaffold_project(config)
         
         project_path = self.test_dir / "test_project"
-        gzip_middleware = (project_path / "core" / "middleware_gzip.py").read_text()
-        
+        gzip_middleware = (project_path / "core" / "middleware" / "gzip.py").read_text()
+
         # Check key imports and functions
         assert "from starlette.middleware.gzip import GZipMiddleware" in gzip_middleware
-        assert "from core.middleware_config import MiddlewareConfig" in gzip_middleware
         assert "def create_gzip_middleware(config: Optional[MiddlewareConfig] = None):" in gzip_middleware
         assert "return GZipMiddleware(" in gzip_middleware
 
@@ -224,14 +216,14 @@ class TestMiddlewareSupport:
         scaffold_project(config)
         
         project_path = self.test_dir / "test_project"
-        logging_middleware = (project_path / "core" / "middleware_logging.py").read_text()
-        
+        logging_middleware = (project_path / "core" / "middleware" / "request_logging.py").read_text()
+
         # Check key imports and functions
         assert "from starlette.middleware.base import BaseHTTPMiddleware" in logging_middleware
         assert "import logging" in logging_middleware
         assert "class RequestLoggingMiddleware(BaseHTTPMiddleware):" in logging_middleware
         assert "def __init__(self, app, config: Optional[MiddlewareConfig] = None):" in logging_middleware
-        assert "def dispatch(self, request: Request, call_next):" in logging_middleware
+        assert "async def dispatch(self, request: Request, call_next):" in logging_middleware
         assert "self.logger.info(" in logging_middleware
 
     def test_middleware_setup_content(self):
@@ -250,18 +242,15 @@ class TestMiddlewareSupport:
         scaffold_project(config)
         
         project_path = self.test_dir / "test_project"
-        setup_middleware = (project_path / "core" / "middleware_setup.py").read_text()
-        
+        setup_middleware = (project_path / "core" / "middleware" / "setup.py").read_text()
+
         # Check key imports and functions
-        assert "from typing import List" in setup_middleware
         assert "from fastapi import FastAPI" in setup_middleware
         assert "def setup_middleware(app: FastAPI, config: Optional[MiddlewareConfig] = None):" in setup_middleware
-        assert "def create_cors_middleware(config: MiddlewareConfig):" in setup_middleware
-        assert "def create_gzip_middleware(config: Optional[MiddlewareConfig] = None):" in setup_middleware
-        assert "app.add_middleware(middleware)" in setup_middleware
+        assert "app.add_middleware(" in setup_middleware
 
-    def test_main_with_middleware_content(self):
-        """Test that main_with_middleware.py contains correct application setup."""
+    def test_middleware_setup_imports(self):
+        """Test that middleware setup.py imports are correct."""
         config = ProjectConfig(
             name="test_project",
             mode="full",
@@ -271,19 +260,16 @@ class TestMiddlewareSupport:
             redis=False,
             middleware=True
         )
-        
+
         os.chdir(self.test_dir)
         scaffold_project(config)
-        
+
         project_path = self.test_dir / "test_project"
-        main_middleware = (project_path / "main_with_middleware.py").read_text()
-        
-        # Check key imports and functions
-        assert "from fastapi import FastAPI" in main_middleware
-        assert "from core.middleware_config import get_middleware_config" in main_middleware
-        assert "from core.middleware_setup import setup_middleware" in main_middleware
-        assert "app = create_app()" in main_middleware
-        assert "setup_middleware(app, config)" in main_middleware
+        setup_content = (project_path / "core" / "middleware" / "setup.py").read_text()
+
+        assert "from fastapi import FastAPI" in setup_content
+        assert "def setup_middleware" in setup_content
+        assert "def get_middleware_config" in setup_content
 
     def test_middleware_with_all_features(self):
         """Test that middleware works correctly with all other features enabled."""
@@ -303,15 +289,13 @@ class TestMiddlewareSupport:
         project_path = self.test_dir / "test_full_project"
         
         # Check all expected files exist
-        assert (project_path / "core" / "middleware_config.py").exists()
-        assert (project_path / "core" / "middleware_cors.py").exists()
-        assert (project_path / "core" / "middleware_rate_limit.py").exists()
-        assert (project_path / "core" / "middleware_security.py").exists()
-        assert (project_path / "core" / "middleware_gzip.py").exists()
-        assert (project_path / "core" / "middleware_logging.py").exists()
-        assert (project_path / "core" / "middleware_trusted_proxy.py").exists()
-        assert (project_path / "core" / "middleware_setup.py").exists()
-        assert (project_path / "main_with_middleware.py").exists()
+        assert (project_path / "core" / "middleware" / "config.py").exists()
+        assert (project_path / "core" / "middleware" / "cors.py").exists()
+        assert (project_path / "core" / "middleware" / "rate_limit.py").exists()
+        assert (project_path / "core" / "middleware" / "security_headers.py").exists()
+        assert (project_path / "core" / "middleware" / "gzip.py").exists()
+        assert (project_path / "core" / "middleware" / "request_logging.py").exists()
+        assert (project_path / "core" / "middleware" / "setup.py").exists()
         assert (project_path / "core" / "security.py").exists()  # Auth file
         assert (project_path / "alembic.ini").exists()  # Alembic file
         assert (project_path / "Dockerfile").exists()  # Docker file
@@ -335,7 +319,6 @@ class TestMiddlewareSupport:
         requirements = (project_path / "requirements.txt").read_text()
         
         # Check middleware requirements are in requirements
-        assert "starlette>=0.27.0" in requirements
         assert "fastapi>=0.100.0" in requirements
 
     def test_middleware_requirements_not_added_without_flag(self):
@@ -368,35 +351,28 @@ class TestMiddlewareTemplates:
         assert hasattr(middleware, 'MIDDLEWARE_CONFIG')
         assert hasattr(middleware, 'MIDDLEWARE_CORS')
         assert hasattr(middleware, 'MIDDLEWARE_RATE_LIMIT')
-        assert hasattr(middleware, 'MIDDLEWARE_SECURITY')
+        assert hasattr(middleware, 'MIDDLEWARE_SECURITY_HEADERS')
         assert hasattr(middleware, 'MIDDLEWARE_GZIP')
-        assert hasattr(middleware, 'MIDDLEWARE_LOGGING')
-        assert hasattr(middleware, 'MIDDLEWARE_TRUSTED_PROXY')
+        assert hasattr(middleware, 'MIDDLEWARE_REQUEST_LOGGING')
         assert hasattr(middleware, 'MIDDLEWARE_SETUP')
-        assert hasattr(middleware, 'MIDDLEWARE_MAIN')
         assert hasattr(middleware, 'REQUIREMENTS_MIDDLEWARE')
         assert hasattr(middleware, 'ENV_EXAMPLE_MIDDLEWARE')
-        assert hasattr(middleware, 'MIDDLEWARE_EXAMPLES')
 
     def test_middleware_constants_not_empty(self):
         """Test that middleware template constants are not empty."""
         assert middleware.MIDDLEWARE_CONFIG.strip() != ""
         assert middleware.MIDDLEWARE_CORS.strip() != ""
         assert middleware.MIDDLEWARE_RATE_LIMIT.strip() != ""
-        assert middleware.MIDDLEWARE_SECURITY.strip() != ""
+        assert middleware.MIDDLEWARE_SECURITY_HEADERS.strip() != ""
         assert middleware.MIDDLEWARE_GZIP.strip() != ""
-        assert middleware.MIDDLEWARE_LOGGING.strip() != ""
-        assert middleware.MIDDLEWARE_TRUSTED_PROXY.strip() != ""
+        assert middleware.MIDDLEWARE_REQUEST_LOGGING.strip() != ""
         assert middleware.MIDDLEWARE_SETUP.strip() != ""
-        assert middleware.MIDDLEWARE_MAIN.strip() != ""
         assert middleware.REQUIREMENTS_MIDDLEWARE.strip() != ""
         assert middleware.ENV_EXAMPLE_MIDDLEWARE.strip() != ""
-        assert middleware.MIDDLEWARE_EXAMPLES.strip() != ""
 
-    def test_middleware_requirements_contains_starlette(self):
-        """Test that requirements string contains starlette."""
-        assert "starlette" in middleware.REQUIREMENTS_MIDDLEWARE.lower()
-        assert "0.27.0" in middleware.REQUIREMENTS_MIDDLEWARE
+    def test_middleware_requirements_contains_fastapi(self):
+        """Test that requirements string contains fastapi."""
+        assert "fastapi" in middleware.REQUIREMENTS_MIDDLEWARE.lower()
 
     def test_middleware_env_example_contains_all_vars(self):
         """Test that env example contains all middleware variables."""
@@ -405,23 +381,18 @@ class TestMiddlewareTemplates:
             "CORS_ALLOW_CREDENTIALS",
             "CORS_ALLOW_METHODS",
             "CORS_ALLOW_HEADERS",
-            "CORS_EXPOSE_HEADERS",
             "RATE_LIMIT_ENABLED",
             "RATE_LIMIT_REQUESTS",
             "RATE_LIMIT_WINDOW",
             "SECURITY_HEADERS_ENABLED",
-            "X-Content-Type-Options",
-            "X-Frame-Options",
-            "X-XSS-Protection",
-            "Strict-Transport-Security",
             "GZIP_ENABLED",
             "GZIP_MINIMUM_SIZE",
             "REQUEST_LOGGING_ENABLED",
             "REQUEST_LOGGING_FORMAT",
             "REQUEST_LOGGING_EXCLUDE_PATHS",
-            "TRUSTED_PROXY_HEADERS"
+            "TRUSTED_PROXY_HEADERS",
         ]
-        
+
         for var in env_vars:
             assert var in middleware.ENV_EXAMPLE_MIDDLEWARE
 

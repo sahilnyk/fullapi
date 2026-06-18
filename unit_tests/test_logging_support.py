@@ -43,8 +43,9 @@ class TestLoggingSupport:
         project_path = self.test_dir / "test_project"
         
         # Check logging files are created
-        assert (project_path / "core" / "logging_config.py").exists()
-        assert (project_path / "core" / "logging_setup.py").exists()
+        assert (project_path / "core" / "logging" / "__init__.py").exists()
+        assert (project_path / "core" / "logging" / "config.py").exists()
+        assert (project_path / "core" / "logging" / "setup.py").exists()
 
     def test_logging_files_not_created_without_flag(self):
         """Test that logging files are not created when logging flag is disabled."""
@@ -58,15 +59,15 @@ class TestLoggingSupport:
             middleware=False,
             logging=False
         )
-        
+
         os.chdir(self.test_dir)
         scaffold_project(config)
-        
+
         project_path = self.test_dir / "test_project"
-        
+
         # Check logging files are not created
-        assert not (project_path / "core" / "logging_config.py").exists()
-        assert not (project_path / "core" / "logging_setup.py").exists()
+        assert not (project_path / "core" / "logging" / "config.py").exists()
+        assert not (project_path / "core" / "logging" / "setup.py").exists()
 
     def test_logging_config_content(self):
         """Test that logging_config.py contains correct configuration."""
@@ -85,7 +86,7 @@ class TestLoggingSupport:
         scaffold_project(config)
         
         project_path = self.test_dir / "test_project"
-        logging_config = (project_path / "core" / "logging_config.py").read_text()
+        logging_config = (project_path / "core" / "logging" / "config.py").read_text()
         
         # Check key classes and functions
         assert "class LoggingConfig:" in logging_config
@@ -110,7 +111,7 @@ class TestLoggingSupport:
         scaffold_project(config)
         
         project_path = self.test_dir / "test_project"
-        logging_setup = (project_path / "core" / "logging_setup.py").read_text()
+        logging_setup = (project_path / "core" / "logging" / "setup.py").read_text()
         
         # Check key imports and functions
         assert "import logging" in logging_setup
@@ -136,8 +137,8 @@ class TestLoggingSupport:
         project_path = self.test_dir / "test_full_project"
         
         # Check all expected files exist
-        assert (project_path / "core" / "logging_config.py").exists()
-        assert (project_path / "core" / "logging_setup.py").exists()
+        assert (project_path / "core" / "logging" / "config.py").exists()
+        assert (project_path / "core" / "logging" / "setup.py").exists()
         assert (project_path / "core" / "security.py").exists()  # Auth file
         assert (project_path / "alembic.ini").exists()  # Alembic file
         assert (project_path / "Dockerfile").exists()  # Docker file

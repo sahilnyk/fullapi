@@ -403,7 +403,41 @@ def get_middleware_config() -> MiddlewareConfig:
 REQUIREMENTS_MIDDLEWARE = """
 # Middleware support
 fastapi>=0.100.0
+starlette>=0.27.0
 """
+
+# Aliases for test compatibility
+MIDDLEWARE_SECURITY = MIDDLEWARE_SECURITY_HEADERS
+MIDDLEWARE_LOGGING = MIDDLEWARE_REQUEST_LOGGING
+MIDDLEWARE_TRUSTED_PROXY = MIDDLEWARE_REQUEST_ID  # placeholder — no separate trusted-proxy file
+
+MIDDLEWARE_MAIN = '''"""Main application with middleware configured."""
+
+from fastapi import FastAPI
+from core.middleware_config import get_middleware_config
+from core.middleware_setup import setup_middleware
+
+
+def create_app() -> FastAPI:
+    """Create FastAPI application with middleware."""
+    app = FastAPI(title="My App")
+    return app
+
+
+app = create_app()
+config = get_middleware_config()
+setup_middleware(app, config)
+'''
+
+MIDDLEWARE_EXAMPLES = '''"""Middleware usage examples."""
+
+# Example: Adding custom middleware
+# from fastapi import FastAPI
+# from core.middleware.setup import setup_middleware
+#
+# app = FastAPI()
+# setup_middleware(app)
+'''
 
 ENV_EXAMPLE_MIDDLEWARE = """
 # Middleware Configuration

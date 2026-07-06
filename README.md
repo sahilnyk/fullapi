@@ -1,92 +1,67 @@
 <div align="center">
 
-# 🕊️ fullapi
+# fullapi
 
-CLI tool for production-ready FastAPI projects with auth, Docker, databases, and Redis caching
+Spec-driven FastAPI: generate a project from `api.yaml`, then enforce it in CI.
 
 [![PyPI](https://img.shields.io/pypi/v/fullapi?color=009688)](https://pypi.org/project/fullapi/)
 [![Python](https://img.shields.io/pypi/pyversions/fullapi?color=009688)](https://pypi.org/project/fullapi/)
-[![Downloads](https://img.shields.io/pypi/dm/fullapi?color=009688)](https://pypi.org/project/fullapi/)
-[![Issues](https://img.shields.io/github/issues-raw/sahilnyk/fullapi?color=009688)](https://github.com/sahilnyk/fullapi/issues)
-[![Changelog](https://img.shields.io/badge/changelog-1.3.0-009688)](CHANGELOG.md)
-[![Contributing](https://img.shields.io/badge/PRs-welcome-009688)](CONTRIBUTING.md)
 
 </div>
+
+## Why
+
+Scaffolders help once, then leave. `fullapi` keeps the spec as the source of
+truth: `gen` builds the project, `check` fails your CI when the API drifts from
+the spec — a living contract, not a one-shot template.
 
 ## Quick Start
 
 ```bash
 pip install fullapi
-fullapi new my_api --preset production
-cd my_api && pip install -r requirements.txt
-uvicorn main:app --reload
 ```
 
-## Features
+Write `api.yaml`:
 
-| Feature | Description |
-|---------|-------------|
-| Zero Dependencies | Pure Python stdlib |
-| Production Ready | Auth, Docker, DB migrations, Redis |
-| Modern Architecture | SQLAlchemy 2.0, Pydantic v2, async lifespan |
-| Extensible | Add routers/models anytime |
-| Health Checks | `fullapi doctor` validates structure |
-| Database Support | SQLite, PostgreSQL, MySQL with Alembic migrations |
-| JWT Authentication | Access/refresh tokens, role-based access |
-| Redis Caching | Async client with cache manager |
-| Middleware Stack | CORS, rate limiting, security headers, gzip, request ID, logging |
+```yaml
+name: shop_api
+database: sqlite        # none | sqlite | postgres
+auth: jwt               # optional
+resources:
+  - name: product
+    fields:
+      title: str
+      price: float
+      note: str?        # trailing ? = optional
+    auth: true          # protect this resource's routes
+```
+
+Generate and run:
+
+```bash
+fullapi gen                       # api.yaml -> ./app
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+Enforce in CI:
+
+```bash
+fullapi check                     # exits non-zero on breaking changes
+```
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `fullapi new <name>` | Create new project |
-| `fullapi add router <name>` | Add router to project |
-| `fullapi doctor` | Check project health |
-| `fullapi docker build` | Build Docker image |
-| `fullapi docker push` | Push image to registry |
-| `fullapi preset list` | List available presets |
+| `fullapi gen [spec] [-o dir]` | Generate the project from the spec |
+| `fullapi check [spec] [--app app.main:app]` | Fail on breaking drift from the spec |
 
-## Presets
+## How `check` works
 
-| Preset | Stack |
-|--------|-------|
-| `production` | PostgreSQL + auth + Docker + Redis + middleware + logging |
-| `microservice` | SQLite + Docker + middleware + logging |
-| `minimal` | Basic API only |
+It reads the live app's real `app.openapi()`, derives the expected schema from
+`api.yaml`, and diffs them. Removed routes/fields, type changes, and newly
+required fields are **breaking** (non-zero exit); added routes and optional
+fields are **safe**.
 
-## CLI Options
-
-```bash
-fullapi new my_api [OPTIONS]
-
---basic              Minimal structure
---full               Production structure
---db TYPE            none | sqlite | postgresql | mysql
---auth               JWT authentication
---docker             Docker + docker-compose
---redis              Redis caching
---middleware         Middleware stack
---logging            Structured logging
---preset NAME        Use preset config
-```
-
-## Project Structure
-
-```
-my_api/
-├── main.py              # FastAPI app with lifespan
-├── core/                # Config, responses, middleware, logging
-├── routers/             # API endpoints (health, users, auth, redis)
-├── schemas/             # Pydantic models
-├── models/              # SQLAlchemy models
-├── crud/                # Database operations
-├── dependencies/        # DB, auth, cache injection
-├── db/                  # Session, base, mixins
-├── tests/               # Pytest with fixtures
-├── alembic/             # DB migrations
-├── requirements.txt
-└── .env.example
-```
-
-Built and maintained by [@sahilnyk](https://github.com/sahilnyk) with zero dependencies
+Built and maintained by [@sahilnyk](https://github.com/sahilnyk).

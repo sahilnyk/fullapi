@@ -1,9 +1,0 @@
-fastapi
-uvicorn
-pydantic
-pydantic[email]
-pydantic-settings
-sqlalchemy
-
-# Database migrations
-alembic>=1.12.0

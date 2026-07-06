@@ -141,9 +141,9 @@ def _crud(res: Resource) -> str:
     cls = _class_name(res)
     assigns = ", ".join(f"{f.name}=payload.{f.name}" for f in res.fields)
     set_fields = "\n".join(
-        f"        setattr(obj, {f.name!r}, getattr(payload, {f.name!r}))"
+        f"    setattr(obj, {f.name!r}, getattr(payload, {f.name!r}))"
         for f in res.fields
-    ) or "        pass"
+    ) or "    pass"
     return (
         "from sqlalchemy.orm import Session\n"
         f"from app.models.{res.name} import {cls}\n"

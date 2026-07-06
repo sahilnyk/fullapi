@@ -114,3 +114,43 @@ def test_syntax_valid_for_all_generated_files():
             for path, content in render(make_spec(database, auth)).items():
                 if path.endswith(".py"):
                     compile(content, path, "exec")
+
+
+def test_generated_crud_roundtrip(tmp_path, monkeypatch):
+    """Drive the generated sqlite app end to end: update must actually change data."""
+    import pytest
+
+    pytest.importorskip("fastapi")
+    pytest.importorskip("sqlalchemy")
+    pytest.importorskip("pydantic_settings")
+    spec = Spec(
+        name="shop",
+        database="sqlite",
+        auth=False,
+        resources=[Resource(name="product", fields=[
+            Field("title", "str"), Field("price", "float"),
+        ])],
+    )
+    write(spec, tmp_path)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path/'test.db'}")
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    main = _load_module(tmp_path / "app" / "main.py", "gen_app_main")
+    from app.database import Base, engine  # noqa: E402
+    Base.metadata.create_all(bind=engine)
+
+    from fastapi.testclient import TestClient
+    client = TestClient(main.app)
+
+    created = client.post("/products/", json={"title": "a", "price": 1.0})
+    assert created.status_code in (200, 201), created.text
+    pid = created.json()["id"]
+
+    updated = client.put(f"/products/{pid}", json={"title": "b", "price": 2.0})
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["title"] == "b"   # regression: update was a no-op
+
+    assert client.get(f"/products/{pid}").json()["title"] == "b"
+    assert client.delete(f"/products/{pid}").status_code in (200, 204)
+    assert client.get(f"/products/{pid}").status_code == 404

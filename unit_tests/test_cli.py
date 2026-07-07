@@ -1,5 +1,3 @@
-"""CLI smoke tests: gen writes files, check reports drift and exits non-zero."""
-
 import subprocess
 import sys
 from pathlib import Path
@@ -68,11 +66,9 @@ def test_cli_check_detects_breaking_drift(tmp_path):
     gen = _run(["gen"], cwd=tmp_path)
     assert gen.returncode == 0
 
-    # Baseline: clean check passes.
     ok = _run(["check"], cwd=tmp_path)
     assert ok.returncode == 0, ok.stdout + ok.stderr
 
-    # Drift: change a field type in the spec so the live app no longer matches.
     (tmp_path / "api.yaml").write_text(SPEC.replace("price: float", "price: str"))
     drift = _run(["check"], cwd=tmp_path)
     assert drift.returncode != 0

@@ -4,30 +4,66 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fullapi"
-version = "1.3.0"
-description = "Spec-driven FastAPI: generate a project from api.yaml and enforce it in CI"
+version = "2.0.0"
+description = "Spec-driven FastAPI: generate a project from api.yaml, then enforce the spec in CI (openapi drift check)."
 readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"
 dependencies = [
     "PyYAML>=6.0",
 ]
-authors = [
-    {name = "Sahil Nayak"}
+authors = [{name = "Sahil Nayak"}]
+maintainers = [{name = "Sahil Nayak"}]
+keywords = [
+    "fastapi",
+    "openapi",
+    "api",
+    "rest",
+    "cli",
+    "code-generator",
+    "scaffolding",
+    "boilerplate",
+    "template",
+    "sqlalchemy",
+    "pydantic",
+    "jwt",
+    "auth",
+    "postgresql",
+    "sqlite",
+    "spec-driven",
+    "api-first",
+    "contract-testing",
+    "schema-diff",
+    "ci",
+    "linter",
+    "generator",
+    "microservices",
+    "python",
 ]
-maintainers = [
-    {name = "Sahil Nayak"}
-]
-keywords = ["fastapi", "api", "rest", "cli", "docker", "postgresql", "auth", "jwt", "microservices", "boilerplate", "template", "redis", "sqlalchemy", "scaffolding", "code-generator"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+    "Framework :: FastAPI",
+    "Framework :: Pydantic",
+    "Framework :: Pydantic :: 2",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+    "Typing :: Typed",
+    "Environment :: Console",
 ]
 
 [project.scripts]
@@ -36,6 +72,8 @@ fullapi = "fullapi.cli:main"
 [project.urls]
 Homepage = "https://github.com/sahilnyk/fullapi"
 Repository = "https://github.com/sahilnyk/fullapi"
+Issues = "https://github.com/sahilnyk/fullapi/issues"
+Changelog = "https://github.com/sahilnyk/fullapi/blob/master/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["."]

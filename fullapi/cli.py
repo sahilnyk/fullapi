@@ -1,6 +1,7 @@
 """CLI entry point — thin dispatch for `gen` and `check`."""
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -10,54 +11,99 @@ from fullapi.generate import write
 from fullapi.check import run_check, CheckError
 
 DEFAULT_SPEC = "api.yaml"
+DEFAULT_APP = "app.main:app"
+
+
+def _use_color() -> bool:
+    if os.environ.get("NO_COLOR"):
+        return False
+    if os.environ.get("FORCE_COLOR"):
+        return True
+    return sys.stdout.isatty()
+
+
+class _Style:
+    def __init__(self, enabled: bool):
+        self.enabled = enabled
+
+    def _wrap(self, code: str, text: str) -> str:
+        return f"\033[{code}m{text}\033[0m" if self.enabled else text
+
+    def dim(self, t: str) -> str:   return self._wrap("2", t)
+    def bold(self, t: str) -> str:  return self._wrap("1", t)
+    def green(self, t: str) -> str: return self._wrap("32", t)
+    def red(self, t: str) -> str:   return self._wrap("31", t)
+    def cyan(self, t: str) -> str:  return self._wrap("36", t)
+    def yellow(self, t: str) -> str: return self._wrap("33", t)
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(prog="fullapi", description="Spec-driven FastAPI.")
-    parser.add_argument("--version", action="version", version=__version__)
-    sub = parser.add_subparsers(dest="command", required=True)
+    parser = argparse.ArgumentParser(
+        prog="fullapi",
+        description="Spec-driven FastAPI — generate a project from api.yaml and enforce it in CI.",
+    )
+    parser.add_argument("--version", action="version", version=f"fullapi {__version__}")
+    sub = parser.add_subparsers(dest="command", metavar="{gen,check}", required=True)
 
-    gen = sub.add_parser("gen", help="Generate the project from the spec")
-    gen.add_argument("spec", nargs="?", default=DEFAULT_SPEC, help="Spec file (default: api.yaml)")
-    gen.add_argument("-o", "--out", default=".", help="Output directory (default: .)")
+    gen = sub.add_parser("gen", help="generate the project from api.yaml")
+    gen.add_argument("spec", nargs="?", default=DEFAULT_SPEC,
+                     help=f"spec file (default: {DEFAULT_SPEC})")
+    gen.add_argument("-o", "--out", default=".", help="output directory (default: .)")
 
-    chk = sub.add_parser("check", help="Check the live app against the spec")
-    chk.add_argument("spec", nargs="?", default=DEFAULT_SPEC, help="Spec file (default: api.yaml)")
-    chk.add_argument("--app", default="app.main:app", help="App import path (default: app.main:app)")
+    chk = sub.add_parser("check", help="fail CI when the live app drifts from api.yaml")
+    chk.add_argument("spec", nargs="?", default=DEFAULT_SPEC,
+                     help=f"spec file (default: {DEFAULT_SPEC})")
+    chk.add_argument("--app", default=DEFAULT_APP,
+                     help=f"app import path (default: {DEFAULT_APP})")
+    chk.add_argument("-v", "--verbose", action="store_true",
+                     help="also list safe (non-breaking) changes")
 
     args = parser.parse_args()
-    {"gen": _gen, "check": _check}[args.command](args)
+    style = _Style(_use_color())
+    {"gen": _gen, "check": _check}[args.command](args, style)
 
 
-def _load(spec_path: str):
+def _load(spec_path: str, style: "_Style"):
     try:
         return load_spec(Path(spec_path))
     except SpecError as exc:
-        sys.exit(f"spec error: {exc}")
+        sys.exit(f"{style.red('spec error:')} {exc}")
 
 
-def _gen(args) -> None:
-    spec = _load(args.spec)
+def _gen(args, style: "_Style") -> None:
+    spec = _load(args.spec, style)
     written = write(spec, Path(args.out))
     root = Path(args.out).resolve()
     for path in written:
-        print(path.resolve().relative_to(root))
-    print(f"\n{len(written)} files written")
+        rel = path.resolve().relative_to(root)
+        print(f"  {style.dim('+')} {rel}")
+    total = style.bold(str(len(written)))
+    print(f"\n{style.green('done')} — {total} files written to {style.cyan(str(root))}")
 
 
-def _check(args) -> None:
-    spec = _load(args.spec)
+def _check(args, style: "_Style") -> None:
+    spec = _load(args.spec, style)
     try:
         result = run_check(spec, args.app)
     except CheckError as exc:
-        sys.exit(f"check error: {exc}")
+        sys.exit(f"{style.red('check error:')} {exc}")
+
+    safe = [c for c in result.changes if c.severity == "safe"]
+    if args.verbose:
+        for change in safe:
+            print(f"  {style.yellow('~')} {style.dim(change.detail)}")
 
     if result.ok:
-        print("ok — app matches spec")
+        summary = f"{style.green('ok')} — app matches spec"
+        if safe:
+            summary += style.dim(f" ({len(safe)} safe change(s))")
+        print(summary)
         return
+
     for change in result.breaking:
-        print(f"breaking: {change.detail}")
-    sys.exit(f"\n{len(result.breaking)} breaking change(s)")
+        print(f"  {style.red('x')} {change.detail}")
+    count = style.bold(str(len(result.breaking)))
+    sys.exit(f"\n{style.red('fail')} — {count} breaking change(s)")
 
 
 if __name__ == "__main__":

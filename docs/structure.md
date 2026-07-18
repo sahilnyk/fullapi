@@ -1,82 +1,69 @@
 # Project Structure
 
-## Basic Mode Structure
+`fullapi gen` writes everything under `app/`, next to `requirements.txt`. The exact files depend on `database` and `auth` in `api.yaml`.
+
+## No Database (`database: none`)
 
 ```
-my_project/
-├── main.py              # FastAPI application instance
-├── routers/
-│   └── health.py        # Health check endpoint
+app/
+├── __init__.py
+├── main.py              # FastAPI instance, routers, /health
+├── auth.py               # JWT helpers (only if auth: jwt)
 ├── schemas/
-│   └── base.py          # Base Pydantic models
-├── core/
-│   └── config.py        # Configuration management
-└── requirements.txt     # Python dependencies
-```
-
-## Full Mode Structure
-
-```
-my_project/
-├── main.py              # Application entry point with router imports
-├── routers/
 │   ├── __init__.py
-│   ├── health.py        # Health check endpoint
-│   └── users.py         # User CRUD endpoints (if DB selected)
+│   └── <resource>.py    # <Resource>Create / <Resource>Response
+└── routers/
+    ├── __init__.py
+    └── <resource>.py    # CRUD routes, in-memory dict store
+requirements.txt
+```
+
+## With a Database (`database: sqlite` or `postgres`)
+
+```
+app/
+├── __init__.py
+├── main.py               # FastAPI instance, lifespan creates tables, routers, /health
+├── config.py              # pydantic-settings: APP_NAME, DATABASE_URL, SECRET_KEY
+├── database.py            # SQLAlchemy engine, SessionLocal, Base, get_db()
+├── auth.py                 # JWT helpers (only if auth: jwt)
 ├── models/
 │   ├── __init__.py
-│   └── user.py          # SQLAlchemy user model
+│   └── <resource>.py     # SQLAlchemy model
 ├── schemas/
 │   ├── __init__.py
-│   ├── base.py          # Base Pydantic schema
-│   └── user.py          # User schemas (create, response, update)
+│   └── <resource>.py     # <Resource>Create / <Resource>Response
 ├── crud/
 │   ├── __init__.py
-│   └── user.py          # Database operations for users
-├── core/
-│   ├── __init__.py
-│   ├── config.py        # Settings management with pydantic-settings
-│   └── security.py      # JWT utilities (if --auth)
-├── db/
-│   ├── __init__.py
-│   └── session.py       # Database engine and session (if --db)
-├── tests/
-│   └── test_main.py     # Test placeholder
-├── deps.py              # FastAPI dependencies
-├── .env.example         # Environment variable template
-├── requirements.txt     # Dependencies
-├── Dockerfile           # Container build (if --docker)
-└── docker-compose.yml   # Container orchestration (if --docker)
+│   └── <resource>.py     # list / get / create / update / delete
+└── routers/
+    ├── __init__.py
+    └── <resource>.py     # CRUD routes, backed by crud/<resource>.py
+requirements.txt
 ```
 
 ## File Descriptions
 
-### main.py
-Application entry point. Creates FastAPI instance and includes routers.
+### app/main.py
+Creates the FastAPI instance, includes each resource's router, registers a `/health` endpoint. When a database is configured, wires a `lifespan` handler that calls `Base.metadata.create_all()` on startup.
 
-### routers/
-API endpoint definitions organized by resource.
+### app/config.py (database only)
+`pydantic-settings` `Settings` class: `APP_NAME`, `DATABASE_URL`, `SECRET_KEY`. Reads from `.env` if present.
 
-### models/
-SQLAlchemy ORM models defining database tables.
+### app/database.py (database only)
+SQLAlchemy `engine`, `SessionLocal`, declarative `Base`, and a `get_db()` dependency.
 
-### schemas/
-Pydantic models for request/response validation and serialization.
+### app/auth.py (auth only)
+`OAuth2PasswordBearer` scheme plus `create_access_token()` / `get_current_user()` built on `python-jose`.
 
-### crud/
-Database Create, Read, Update, Delete operations.
+### app/models/
+One SQLAlchemy model per resource — an `id` primary key plus one column per spec field.
 
-### core/
-Configuration and security utilities.
+### app/schemas/
+One Pydantic module per resource — a `<Resource>Create` request model and a `<Resource>Response` model (`from_attributes=True`).
 
-### db/
-Database connection and session management.
+### app/crud/ (database only)
+`list_/get_/create_/update_/delete_<resource>()` functions operating on a `Session`.
 
-### tests/
-Test files. Uses pytest by convention.
-
-### deps.py
-FastAPI dependency injection definitions.
-
-### .env.example
-Template for environment variables. Copy to `.env` and customize.
+### app/routers/
+One `APIRouter` per resource exposing `GET /`, `GET /{id}`, `POST /`, `PUT /{id}`, `DELETE /{id}` at `/<resource>s`, backed by CRUD functions (or an in-memory dict when there's no database).

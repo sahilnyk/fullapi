@@ -1,20 +1,23 @@
 # fullapi Documentation
 
-Welcome to the fullapi documentation. fullapi is a FastAPI project scaffolder that generates complete project structures with one command.
+Welcome to the fullapi documentation. fullapi is a spec-driven FastAPI tool: it generates a project from `api.yaml`, then enforces that spec in CI.
 
 ## What is fullapi?
 
-fullapi eliminates the repetitive setup work when starting a new FastAPI project. Instead of manually creating folders, writing boilerplate code, and configuring your environment, you run one command and get a production-ready structure instantly.
+Most scaffolders help once, then leave — the generated code and the thing that produced it drift apart over time. fullapi keeps `api.yaml` as the source of truth for the life of the project:
+
+- `fullapi init` writes a starter `api.yaml` to edit.
+- `fullapi gen` builds the FastAPI project from the spec.
+- `fullapi check` reads the live app's `app.openapi()`, derives what the spec expects, and fails CI when they've drifted.
 
 ## Key Features
 
-- Zero dependencies - built with Python stdlib only
-- Interactive prompts for configuration
-- CLI flags for automation and scripting
-- Multiple database support (SQLite, PostgreSQL, MySQL)
-- Optional JWT authentication
-- Optional Docker setup
-- Clean, readable generated code
+- Zero runtime dependencies beyond PyYAML
+- Declarative resources — fields, types, and per-resource auth in YAML
+- SQLite or PostgreSQL, or no database at all
+- Optional JWT authentication (global or per-resource)
+- Generated CRUD routers, Pydantic schemas, and (with a database) SQLAlchemy models
+- `check` classifies drift as breaking (removed routes/fields, type changes, newly required fields) or safe (additions)
 
 ## Quick Links
 
@@ -28,7 +31,8 @@ fullapi eliminates the repetitive setup work when starting a new FastAPI project
 
 ```bash
 pip install fullapi
-fullapi new my_project
+fullapi init
+fullapi gen
 ```
 
-That's it. Your project is ready.
+`init` writes a starter `api.yaml` to edit; `gen` generates `./app` from it.

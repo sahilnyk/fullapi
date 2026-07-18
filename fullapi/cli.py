@@ -13,6 +13,20 @@ from fullapi.check import run_check, CheckError
 DEFAULT_SPEC = "api.yaml"
 DEFAULT_APP = "app.main:app"
 
+STARTER_SPEC = """\
+name: my_api
+database: sqlite   # none | sqlite | postgres
+# auth: jwt         # uncomment to require JWT auth on every resource
+
+resources:
+  - name: product
+    fields:
+      title: str
+      price: float
+      note: str?    # trailing ? = optional field
+    # auth: true    # uncomment to protect just this resource
+"""
+
 
 def _use_color() -> bool:
     if os.environ.get("NO_COLOR"):
@@ -43,7 +57,11 @@ def main() -> None:
         description="Spec-driven FastAPI — generate a project from api.yaml and enforce it in CI.",
     )
     parser.add_argument("--version", action="version", version=f"fullapi {__version__}")
-    sub = parser.add_subparsers(dest="command", metavar="{gen,check}", required=True)
+    sub = parser.add_subparsers(dest="command", metavar="{init,gen,check}", required=True)
+
+    init = sub.add_parser("init", help="write a starter api.yaml")
+    init.add_argument("spec", nargs="?", default=DEFAULT_SPEC,
+                      help=f"spec file to write (default: {DEFAULT_SPEC})")
 
     gen = sub.add_parser("gen", help="generate the project from api.yaml")
     gen.add_argument("spec", nargs="?", default=DEFAULT_SPEC,
@@ -60,7 +78,15 @@ def main() -> None:
 
     args = parser.parse_args()
     style = _Style(_use_color())
-    {"gen": _gen, "check": _check}[args.command](args, style)
+    {"init": _init, "gen": _gen, "check": _check}[args.command](args, style)
+
+
+def _init(args, style: "_Style") -> None:
+    path = Path(args.spec)
+    if path.exists():
+        sys.exit(f"{style.red('error:')} {path} already exists")
+    path.write_text(STARTER_SPEC)
+    print(f"{style.green('done')} — wrote {style.cyan(str(path))}")
 
 
 def _load(spec_path: str, style: "_Style"):

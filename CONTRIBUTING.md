@@ -19,21 +19,16 @@ pip install -e .
 
 | Rule | Description |
 |------|-------------|
-| Zero Dependencies | Keep CLI tool dependency-free, only stdlib imports |
-| Test Changes | Test both basic and full project generation |
+| Minimal Dependencies | Runtime dependency is PyYAML only — don't add more without discussion |
+| Single Source of Truth | Field-type mapping lives in `fullapi/types.py`; both `gen` and `check` must go through it |
+| Test Changes | Run `pytest unit_tests/` before submitting |
 | Follow Style | Use type hints, keep functions focused |
 | Clear Commits | Follow commit message format below |
 
 ### Testing Your Changes
 
 ```bash
-# Test basic project
-fullapi new test_basic --basic
-cd test_basic && python -c "from main import app; print('✓')"
-
-# Test full project
-fullapi new test_full --full --db postgresql --auth --docker
-cd test_full && python -c "from main import app; print('✓')"
+pytest unit_tests/
 ```
 
 ### Pull Request Process
@@ -64,10 +59,9 @@ Keep messages under 50 characters.
 | Area | Status |
 |------|--------|
 | Bug Fixes | Always welcome |
-| New Features | Open issue first to discuss |
+| New Field Types | Open issue first to discuss (`fullapi/types.py`) |
 | Documentation | Improvements appreciated |
-| Templates | New project templates |
-| Cloud Providers | Extend Terraform support |
+| Database Backends | Open issue first to discuss |
 
 ## Questions?
 

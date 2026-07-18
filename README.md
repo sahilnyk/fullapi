@@ -21,7 +21,7 @@ the spec — a living contract, not a one-shot template.
 pip install fullapi
 ```
 
-Write `api.yaml`:
+Write `api.yaml` (or run `fullapi init` for a starter file):
 
 ```yaml
 name: shop_api
@@ -54,6 +54,7 @@ fullapi check                     # exits non-zero on breaking changes
 
 | Command | Description |
 |---------|-------------|
+| `fullapi init [spec]` | Write a starter api.yaml |
 | `fullapi gen [spec] [-o dir]` | Generate the project from the spec |
 | `fullapi check [spec] [--app app.main:app]` | Fail on breaking drift from the spec |
 

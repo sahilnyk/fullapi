@@ -1,79 +1,65 @@
 # Usage Guide
 
-## Creating a New Project
+## Writing a Spec
 
-### Interactive Mode
+Everything starts from `api.yaml`. Run `fullapi init` to get a starter file with a worked example, or write one from scratch:
 
-The simplest way to create a project:
-
-```bash
-fullapi new my_project
+```yaml
+name: shop_api
+database: sqlite        # none | sqlite | postgres
+auth: jwt                # optional, protects every resource by default
+resources:
+  - name: product
+    fields:
+      title: str
+      price: float
+      note: str?          # trailing ? = optional field
+    auth: true             # protect just this resource's routes
 ```
 
-This starts an interactive prompt where you choose:
-
-1. **Mode**: Basic or Full
-2. **Database**: None, SQLite, PostgreSQL, or MySQL
-3. **Authentication**: None or JWT
-4. **Docker**: Yes or No
-
-### Non-Interactive Mode (Flags)
-
-For automation or scripts, use flags to skip prompts:
+Supported field types: `str`, `int`, `float`, `bool` — each may be suffixed with `?` to make it optional.
 
 ```bash
-# Basic mode
-fullapi new my_project --basic
-
-# Full mode with PostgreSQL
-fullapi new my_project --full --db postgresql
-
-# Full mode with everything
-fullapi new my_project --full --db postgresql --auth --docker
+fullapi init                # writes ./api.yaml (fails if it already exists)
+fullapi init other.yaml     # write to a different path
 ```
 
-## Available Commands
+## Generating a Project
+
+```bash
+fullapi gen                # reads ./api.yaml, writes to ./app
+fullapi gen other.yaml     # use a different spec file
+fullapi gen -o build       # write to a different output directory
+```
+
+Run the generated project:
+
+```bash
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+Your API is now running at `http://localhost:8000`. Visit `http://localhost:8000/docs` for interactive API documentation.
+
+## Checking for Drift
+
+`fullapi check` fails CI when the live app no longer matches `api.yaml`:
+
+```bash
+fullapi check                       # reads ./api.yaml, imports app.main:app
+fullapi check other.yaml            # check against a different spec
+fullapi check --app mypkg.main:app  # import a different app object
+fullapi check -v                    # also list safe (non-breaking) changes
+```
+
+It exits non-zero when it finds breaking changes: removed routes, removed fields, changed field types, or fields that became required. Added routes and added optional fields are reported as safe and don't fail the build.
+
+## Command Reference
 
 | Command | Description |
 |---------|-------------|
-| `fullapi new <name>` | Create project with prompts |
-| `fullapi new <name> --basic` | Basic mode, no prompts |
-| `fullapi new <name> --full` | Full mode, no prompts |
+| `fullapi init [spec]` | Write a starter api.yaml |
+| `fullapi gen [spec] [-o dir]` | Generate the project from the spec |
+| `fullapi check [spec] [--app app.main:app] [-v]` | Fail on breaking drift from the spec |
 | `fullapi --version` | Show version |
 | `fullapi --help` | Show help |
-
-## CLI Flags Reference
-
-| Flag | Values | Description |
-|------|--------|-------------|
-| `--basic` | - | Minimal structure |
-| `--full` | - | Complete structure with models, CRUD |
-| `--db` | none, sqlite, postgresql, mysql | Database choice |
-| `--auth` | - | Add JWT authentication |
-| `--docker` | - | Add Docker files |
-
-## Running Your Project
-
-After scaffolding:
-
-```bash
-cd my_project
-pip install -r requirements.txt
-uvicorn main:app --reload
-```
-
-Your API is now running at `http://localhost:8000`
-
-Visit `http://localhost:8000/docs` for interactive API documentation.
-
-## Handling Existing Directories
-
-If the project directory already exists, fullapi will ask:
-
-```
-Directory 'my_project' already exists.
-    1. Overwrite
-    2. Cancel
-```
-
-Choose 1 to replace the existing directory, or 2 to cancel.

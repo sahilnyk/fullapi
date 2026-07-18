@@ -28,6 +28,17 @@ def _run(args, cwd, extra_env=None):
     )
 
 
+def test_cli_init_writes_starter_spec(tmp_path):
+    result = _run(["init"], cwd=tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert (tmp_path / "api.yaml").exists()
+    assert "name:" in (tmp_path / "api.yaml").read_text()
+
+    again = _run(["init"], cwd=tmp_path)
+    assert again.returncode != 0
+    assert "already exists" in (again.stdout + again.stderr)
+
+
 def test_cli_gen_writes_files(tmp_path):
     (tmp_path / "api.yaml").write_text(SPEC)
     result = _run(["gen"], cwd=tmp_path)

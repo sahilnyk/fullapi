@@ -27,33 +27,32 @@ fullapi --version
 
 ### Keep It Simple
 
-- Use Python standard library only
-- No external dependencies
-- Clean, readable code
+- Only runtime dependency is PyYAML — don't add more without discussion
+- `gen` (spec -> code) and `check` (spec -> expected OpenAPI) both go through `fullapi.types.resolve` as the single source of truth for field-type mapping; don't duplicate that mapping
 - One feature per pull request
 
 ### Code Style
 
 - Follow PEP 8
-- Use descriptive variable names
-- Add docstrings to functions
+- Use type hints
 - Keep functions focused and small
 
 ### Testing
 
-Test your changes before submitting:
+Run the test suite before submitting:
 
 ```bash
-# Test basic mode
-fullapi new test_basic --basic
+pytest unit_tests/
+```
 
-# Test full mode
-fullapi new test_full --full --db sqlite --auth
+To sanity-check generation and drift detection manually:
 
-# Verify generated code works
-cd test_full
+```bash
+mkdir /tmp/fullapi_test && cd /tmp/fullapi_test
+fullapi init
+fullapi gen
 pip install -r requirements.txt
-python -c "from main import app; print('OK')"
+fullapi check
 ```
 
 ### Commit Messages
@@ -92,7 +91,7 @@ We welcome suggestions. Please:
 
 - Describe the use case
 - Explain why it helps users
-- Keep it aligned with the project's philosophy (stdlib only)
+- Keep it aligned with the project's philosophy (spec stays the source of truth)
 
 ## Code of Conduct
 

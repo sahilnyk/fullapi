@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [2.1.0] - 2026-07-31
+
 ### Added
 - `fullapi init [spec]` — write a starter `api.yaml` with a worked example; refuses to overwrite an existing file
 

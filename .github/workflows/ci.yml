@@ -41,7 +41,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: pip install -e . && pip install pytest
+      - run: pip install -e ".[test]"
       - run: pytest unit_tests/ -v --ignore=unit_tests/test_logging_support.py --ignore=unit_tests/test_middleware_support.py -k "not (redis_support or add_component or custom_templates)"
 
   integration-test:

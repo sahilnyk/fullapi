@@ -12,6 +12,7 @@ license = "MIT"
 dependencies = [
     "PyYAML>=6.0",
 ]
+
 authors = [{name = "Sahil Nayak"}]
 maintainers = [{name = "Sahil Nayak"}]
 keywords = [
@@ -64,6 +65,9 @@ classifiers = [
     "Typing :: Typed",
     "Environment :: Console",
 ]
+
+[project.optional-dependencies]
+test = ["pytest", "pydantic", "pydantic-settings"]
 
 [project.scripts]
 fullapi = "fullapi.cli:main"

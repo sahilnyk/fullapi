@@ -72,12 +72,6 @@ test = ["pytest", "pydantic", "pydantic-settings"]
 [project.scripts]
 fullapi = "fullapi.cli:main"
 
-[project.urls]
-Homepage = "https://github.com/sahilnyk/fullapi"
-Repository = "https://github.com/sahilnyk/fullapi"
-Issues = "https://github.com/sahilnyk/fullapi/issues"
-Changelog = "https://github.com/sahilnyk/fullapi/blob/master/CHANGELOG.md"
-
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["fullapi*"]

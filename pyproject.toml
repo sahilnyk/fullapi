@@ -36,9 +36,9 @@ keywords = [
     "contract-testing",
     "schema-diff",
     "ci",
-    "linter",
     "generator",
-    "microservices",
+    "crud",
+    "yaml",
     "python",
 ]
 classifiers = [

@@ -6,14 +6,17 @@ Spec-driven FastAPI: generate a project from `api.yaml`, then enforce it in CI.
 
 [![PyPI](https://img.shields.io/pypi/v/fullapi?color=009688)](https://pypi.org/project/fullapi/)
 [![Python](https://img.shields.io/pypi/pyversions/fullapi?color=009688)](https://pypi.org/project/fullapi/)
+[![Downloads](https://img.shields.io/pypi/dm/fullapi?color=009688)](https://pypi.org/project/fullapi/)
+[![CI](https://github.com/sahilnyk/fullapi/actions/workflows/ci.yml/badge.svg)](https://github.com/sahilnyk/fullapi/actions/workflows/ci.yml)
+[![License](https://img.shields.io/pypi/l/fullapi?color=009688)](https://github.com/sahilnyk/fullapi/blob/master/LICENSE)
 
 </div>
 
 ## Why
 
-Scaffolders help once, then leave. `fullapi` keeps the spec as the source of
-truth: `gen` builds the project, `check` fails your CI when the API drifts from
-the spec — a living contract, not a one-shot template.
+Scaffolders build once, then leave you on your own. `fullapi` doesn't. `gen`
+builds the project from `api.yaml`, `check` keeps it honest: change a field,
+drop a route, and CI fails instead of your API quietly drifting from the spec.
 
 ## Quick Start
 

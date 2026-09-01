@@ -4,7 +4,7 @@ No side effects here. Type mapping goes through `fullapi.types.resolve` so
 generation can never disagree with the rest of the stack.
 """
 
-from fullapi.spec import Spec, Resource
+from fullapi.spec import Resource, Spec
 from fullapi.types import resolve
 
 
@@ -21,14 +21,16 @@ def _plural(resource: Resource) -> str:
 def render(spec: Spec) -> dict[str, str]:
     """Return {relative path -> file content} for the whole project (pure)."""
     has_db = spec.database != "none"
+    has_auth = spec.auth or any(resource.auth for resource in spec.resources)
     files: dict[str, str] = {}
 
     files["app/__init__.py"] = ""
     files["requirements.txt"] = _requirements(spec)
     files["app/main.py"] = _main(spec)
 
-    if has_db:
+    if has_db or has_auth:
         files["app/config.py"] = _config(spec)
+    if has_db:
         files["app/database.py"] = _database(spec)
         files["app/models/__init__.py"] = ""
         files["app/crud/__init__.py"] = ""
@@ -36,7 +38,7 @@ def render(spec: Spec) -> dict[str, str]:
     files["app/schemas/__init__.py"] = ""
     files["app/routers/__init__.py"] = ""
 
-    if spec.auth:
+    if has_auth:
         files["app/auth.py"] = _auth()
 
     for res in spec.resources:
@@ -55,26 +57,34 @@ def _requirements(spec: Spec) -> str:
         reqs += ["sqlalchemy", "alembic"]
         if spec.database == "postgres":
             reqs.append("psycopg2-binary")
-    if spec.auth:
+    if spec.auth or any(resource.auth for resource in spec.resources):
         reqs += ["python-jose[cryptography]", "passlib[bcrypt]"]
     return "\n".join(reqs) + "\n"
 
 
 def _config(spec: Spec) -> str:
-    default_url = "sqlite:///./app.db" if spec.database == "sqlite" else ""
+    fields = [f"    APP_NAME: str = {spec.name!r}"]
+    if spec.database == "sqlite":
+        fields.append('    DATABASE_URL: str = "sqlite:///./app.db"')
+    elif spec.database == "postgres":
+        fields.append("    DATABASE_URL: str")
+    if spec.auth or any(resource.auth for resource in spec.resources):
+        fields.append("    SECRET_KEY: str")
+
     return (
         "from pydantic_settings import BaseSettings\n\n\n"
         "class Settings(BaseSettings):\n"
-        f'    APP_NAME: str = "{spec.name}"\n'
-        f'    DATABASE_URL: str = "{default_url}"\n'
-        '    SECRET_KEY: str = "change-me"\n\n'
+        + "\n".join(fields)
+        + "\n\n"
         '    model_config = {"env_file": ".env"}\n\n\n'
         "settings = Settings()\n"
     )
 
 
 def _database(spec: Spec) -> str:
-    connect_args = ', connect_args={"check_same_thread": False}' if spec.database == "sqlite" else ""
+    connect_args = (
+        ', connect_args={"check_same_thread": False}' if spec.database == "sqlite" else ""
+    )
     return (
         "from sqlalchemy import create_engine\n"
         "from sqlalchemy.orm import sessionmaker, declarative_base\n"
@@ -237,7 +247,8 @@ def _router(spec: Spec, res: Resource, has_db: bool) -> str:
     )
     return header + (
         f"@router.get(\"/\", response_model=list[{cls}Response])\n"
-        f"def list_{plural}(skip: int = 0, limit: int = 100, db: Session = Depends(get_db){auth_dep}):\n"
+        f"def list_{plural}(skip: int = 0, limit: int = 100, "
+        f"db: Session = Depends(get_db){auth_dep}):\n"
         f"    return crud.list_{res.name}(db, skip, limit)\n\n\n"
         f"@router.get(\"/{{item_id}}\", response_model={cls}Response)\n"
         f"def get_{res.name}(item_id: int, db: Session = Depends(get_db){auth_dep}):\n"
@@ -249,7 +260,8 @@ def _router(spec: Spec, res: Resource, has_db: bool) -> str:
         f"def create_{res.name}(payload: {cls}Create, db: Session = Depends(get_db){auth_dep}):\n"
         f"    return crud.create_{res.name}(db, payload)\n\n\n"
         f"@router.put(\"/{{item_id}}\", response_model={cls}Response)\n"
-        f"def update_{res.name}(item_id: int, payload: {cls}Create, db: Session = Depends(get_db){auth_dep}):\n"
+        f"def update_{res.name}(item_id: int, payload: {cls}Create, "
+        f"db: Session = Depends(get_db){auth_dep}):\n"
         f"    obj = crud.update_{res.name}(db, item_id, payload)\n"
         "    if obj is None:\n"
         '        raise HTTPException(404, "Not found")\n'
@@ -298,10 +310,10 @@ def _main(spec: Spec) -> str:
             "async def lifespan(app: FastAPI):\n"
             "    Base.metadata.create_all(bind=engine)\n"
             "    yield\n\n\n"
-            f'app = FastAPI(title="{spec.name}", lifespan=lifespan)\n\n'
+            f"app = FastAPI(title={spec.name!r}, lifespan=lifespan)\n\n"
         )
     else:
-        body += f'\napp = FastAPI(title="{spec.name}")\n\n'
+        body += f"\napp = FastAPI(title={spec.name!r})\n\n"
 
     for res in spec.resources:
         body += f"app.include_router({res.name}_router)\n"

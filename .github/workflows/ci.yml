@@ -49,6 +49,8 @@ jobs:
   integration-test:
     name: Integration Test (generate + verify against spec)
     runs-on: ubuntu-latest
+    env:
+      SECRET_KEY: integration-test-key
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

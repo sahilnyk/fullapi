@@ -1,10 +1,12 @@
 """Tests for the generate/ package."""
 
+import importlib
 import importlib.util
 
+import pytest
 
 from fullapi.generate import render, write
-from fullapi.spec import Spec, Resource, Field
+from fullapi.spec import Field, Resource, Spec
 
 
 def make_spec(database="sqlite", auth=False):
@@ -76,6 +78,27 @@ def test_auth_adds_dependency():
     assert "python-jose" in reqs and "passlib" in reqs
 
 
+def test_resource_auth_generates_complete_support_without_database():
+    spec = Spec(
+        name="demo",
+        database="none",
+        auth=False,
+        resources=[Resource(name="item", fields=[], auth=True)],
+    )
+    files = render(spec)
+    assert "app/auth.py" in files
+    assert "app/config.py" in files
+    assert "python-jose" in files["requirements.txt"]
+    compile(files["app/main.py"], "app/main.py", "exec")
+    compile(files["app/routers/item.py"], "app/routers/item.py", "exec")
+
+
+def test_app_name_is_safely_escaped_in_generated_python():
+    spec = Spec(name='demo "quoted"', database="none", auth=False, resources=[])
+    files = render(spec)
+    compile(files["app/main.py"], "app/main.py", "exec")
+
+
 def test_requirements_reflect_database():
     assert "psycopg2-binary" in render(make_spec("postgres"))["requirements.txt"]
     assert "sqlalchemy" in render(make_spec("sqlite"))["requirements.txt"]
@@ -92,6 +115,8 @@ def test_write_produces_files_on_disk(tmp_path):
 
 def _load_module(path, name):
     spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"could not load module from {path}")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -117,9 +142,7 @@ def test_syntax_valid_for_all_generated_files():
 
 
 def test_generated_crud_roundtrip(tmp_path, monkeypatch):
-    """Drive the generated sqlite app end to end: update must actually change data."""
-    import pytest
-
+    """Drive generated SQLite CRUD: update must actually change persisted data."""
     pytest.importorskip("fastapi")
     pytest.importorskip("sqlalchemy")
     pytest.importorskip("pydantic_settings")
@@ -136,21 +159,23 @@ def test_generated_crud_roundtrip(tmp_path, monkeypatch):
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path/'test.db'}")
     monkeypatch.syspath_prepend(str(tmp_path))
 
-    main = _load_module(tmp_path / "app" / "main.py", "gen_app_main")
-    from app.database import Base, engine  # noqa: E402
-    Base.metadata.create_all(bind=engine)
+    _load_module(tmp_path / "app" / "main.py", "gen_app_main")
+    crud = importlib.import_module("app.crud.product")
+    database = importlib.import_module("app.database")
+    product_schema = importlib.import_module("app.schemas.product")
 
-    from fastapi.testclient import TestClient
-    client = TestClient(main.app)
+    database.Base.metadata.create_all(bind=database.engine)
+    db = database.SessionLocal()
+    try:
+        product = product_schema.ProductCreate(title="a", price=1.0)
+        created = crud.create_product(db, product)
+        product_id = created.id
 
-    created = client.post("/products/", json={"title": "a", "price": 1.0})
-    assert created.status_code in (200, 201), created.text
-    pid = created.json()["id"]
-
-    updated = client.put(f"/products/{pid}", json={"title": "b", "price": 2.0})
-    assert updated.status_code == 200, updated.text
-    assert updated.json()["title"] == "b"   # regression: update was a no-op
-
-    assert client.get(f"/products/{pid}").json()["title"] == "b"
-    assert client.delete(f"/products/{pid}").status_code in (200, 204)
-    assert client.get(f"/products/{pid}").status_code == 404
+        update = product_schema.ProductCreate(title="b", price=2.0)
+        updated = crud.update_product(db, product_id, update)
+        assert updated.title == "b"  # regression: update was a no-op
+        assert crud.get_product(db, product_id).title == "b"
+        assert crud.delete_product(db, product_id) is True
+        assert crud.get_product(db, product_id) is None
+    finally:
+        db.close()

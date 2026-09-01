@@ -2,8 +2,8 @@
 
 import pytest
 
-from fullapi.spec import Spec, Resource, Field
-from fullapi.check import expected_schema, diff, CheckError
+from fullapi.check import CheckError, diff, expected_schema
+from fullapi.spec import Field, Resource, Spec
 
 
 def make_spec():
@@ -124,7 +124,7 @@ def test_actual_schema_with_live_app(tmp_path, monkeypatch):
     import sys
     import types as _t
     mod = _t.ModuleType(module)
-    mod.app = app
+    mod.__dict__["app"] = app
     sys.modules[module] = mod
     try:
         from fullapi.check import actual_schema

@@ -30,8 +30,8 @@ def resolve(field_type: str) -> TypeInfo:
     """Return the TypeInfo for a spec field type, or raise ValueError."""
     try:
         return TYPE_MAP[field_type]
-    except KeyError:
+    except KeyError as exc:
         raise ValueError(
             f"unsupported field type {field_type!r}; "
             f"supported: {', '.join(SUPPORTED_TYPES)}"
-        )
+        ) from exc

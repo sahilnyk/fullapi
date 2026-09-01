@@ -45,7 +45,7 @@ jobs:
       - run: pytest unit_tests/ -v --ignore=unit_tests/test_logging_support.py --ignore=unit_tests/test_middleware_support.py -k "not (redis_support or add_component or custom_templates)"
 
   integration-test:
-    name: Integration Test (generate + test project)
+    name: Integration Test (generate + verify against spec)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -53,15 +53,27 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e .
-      - name: Generate full project
+      - name: Write a full spec and generate the project
         run: |
-          python -m fullapi new test_integration --full --db sqlite --auth 2>&1 || true
+          cat > /tmp/api.yaml <<'EOF'
+          name: test_integration
+          database: sqlite
+          auth: jwt
+          resources:
+            - name: item
+              fields:
+                title: str
+                price: float
+                note: str?
+              auth: true
+          EOF
+          python -m fullapi gen /tmp/api.yaml -o test_integration
       - name: Install generated project deps
         run: |
           cd test_integration && pip install -r requirements.txt
-      - name: Run generated project tests
+      - name: Verify the generated app matches its own spec
         run: |
-          cd test_integration && python -m pytest tests/ -v
+          cd test_integration && PYTHONPATH=. python -m fullapi check /tmp/api.yaml --app app.main:app
       - name: Cleanup
         if: always()
         run: rm -rf test_integration

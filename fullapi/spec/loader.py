@@ -1,13 +1,21 @@
 """Load and validate api.yaml into a Spec."""
 
+import re
 from pathlib import Path
 
 import yaml
 
-from fullapi.spec.model import Spec, Resource, Field
+from fullapi.spec.model import Field, Resource, Spec
 from fullapi.types import SUPPORTED_TYPES
 
 DATABASES = ("none", "sqlite", "postgres")
+_IDENTIFIER = re.compile(r"^[a-z][a-z0-9_]*$")
+_WINDOWS_RESERVED = {
+    "aux", "con", "nul", "prn",
+    *(f"com{i}" for i in range(1, 10)),
+    *(f"lpt{i}" for i in range(1, 10)),
+}
+_RESERVED_FIELDS = {"id", "metadata", "registry"}
 
 
 class SpecError(ValueError):
@@ -20,9 +28,11 @@ def load_spec(path: Path) -> Spec:
         raise SpecError(f"spec file not found: {path}")
 
     try:
-        raw = yaml.safe_load(path.read_text())
+        raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise SpecError(f"could not read spec file {path}: {exc}") from exc
     except yaml.YAMLError as exc:
-        raise SpecError(f"invalid YAML: {exc}")
+        raise SpecError(f"invalid YAML: {exc}") from exc
 
     if not isinstance(raw, dict):
         raise SpecError("spec must be a mapping at the top level")
@@ -41,7 +51,10 @@ def _build_spec(raw: dict) -> Spec:
             f"'database' must be one of {DATABASES}, got {database!r}"
         )
 
-    auth = bool(raw.get("auth"))
+    raw_auth = raw.get("auth", False)
+    if raw_auth not in (False, True, "jwt"):
+        raise SpecError("'auth' must be true, false, or 'jwt'")
+    auth = raw_auth in (True, "jwt")
 
     raw_resources = raw.get("resources", [])
     if not isinstance(raw_resources, list):
@@ -66,6 +79,8 @@ def _build_resource(item: dict) -> Resource:
     name = item.get("name")
     if not isinstance(name, str) or not name.strip():
         raise SpecError("resource 'name' is required and must be a non-empty string")
+    name = name.strip()
+    _validate_identifier(name, "resource name")
 
     raw_fields = item.get("fields", {})
     if not isinstance(raw_fields, dict):
@@ -73,10 +88,20 @@ def _build_resource(item: dict) -> Resource:
 
     fields = [_build_field(name, fname, ftype) for fname, ftype in raw_fields.items()]
 
-    return Resource(name=name.strip(), fields=fields, auth=bool(item.get("auth")))
+    raw_auth = item.get("auth", False)
+    if not isinstance(raw_auth, bool):
+        raise SpecError(f"resource {name!r}: 'auth' must be true or false")
+
+    return Resource(name=name, fields=fields, auth=raw_auth)
 
 
 def _build_field(resource_name: str, fname: str, ftype) -> Field:
+    if not isinstance(fname, str):
+        raise SpecError(f"resource {resource_name!r}: field names must be strings")
+    _validate_identifier(fname, f"resource {resource_name!r} field name")
+    if fname in _RESERVED_FIELDS:
+        raise SpecError(f"resource {resource_name!r}: field name {fname!r} is reserved")
+
     required = True
     # Support "type?" suffix or explicit mapping for optional fields.
     if isinstance(ftype, str) and ftype.endswith("?"):
@@ -89,3 +114,10 @@ def _build_field(resource_name: str, fname: str, ftype) -> Field:
         )
 
     return Field(name=fname, type=ftype, required=required)
+
+
+def _validate_identifier(value: str, label: str) -> None:
+    if not _IDENTIFIER.fullmatch(value):
+        raise SpecError(f"{label} {value!r} must be a lowercase Python identifier")
+    if value in _WINDOWS_RESERVED:
+        raise SpecError(f"{label} {value!r} is reserved on Windows")

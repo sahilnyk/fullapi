@@ -24,7 +24,7 @@ def _load_app(app_import_path: str):
 
     try:
         module = importlib.import_module(module_path)
-    except Exception as exc:  # noqa: BLE001 - surface any import failure clearly
+    except Exception as exc:
         raise CheckError(f"could not import {module_path!r}: {exc}") from exc
 
     try:
@@ -91,6 +91,6 @@ def actual_schema(app_import_path: str) -> dict:
     app = _load_app(app_import_path)
     try:
         openapi = app.openapi()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         raise CheckError(f"failed to call {app_import_path}.openapi(): {exc}") from exc
     return normalize_openapi(openapi)

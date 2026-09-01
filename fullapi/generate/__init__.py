@@ -7,8 +7,8 @@ disk; it flushes `render`'s output under a destination directory.
 
 from pathlib import Path
 
-from fullapi.spec import Spec
 from fullapi.generate.renderers import render
+from fullapi.spec import Spec
 
 __all__ = ["render", "write"]
 
@@ -20,6 +20,6 @@ def write(spec: Spec, dest: Path) -> list[Path]:
     for rel_path, content in render(spec).items():
         target = dest / rel_path
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(content)
+        target.write_text(content, encoding="utf-8")
         written.append(target)
     return sorted(written)

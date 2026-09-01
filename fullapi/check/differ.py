@@ -1,11 +1,9 @@
 """Classify differences between two normalized schemas."""
 
-from typing import List
-
 from fullapi.check.model import Change
 
 
-def _diff_routes(expected: set, actual: set) -> List[Change]:
+def _diff_routes(expected: set, actual: set) -> list[Change]:
     changes = []
     for route in sorted(expected - actual):
         changes.append(Change("route_removed", "breaking", f"route missing: {route}"))
@@ -14,7 +12,7 @@ def _diff_routes(expected: set, actual: set) -> List[Change]:
     return changes
 
 
-def _diff_fields(schema_name: str, expected: dict, actual: dict) -> List[Change]:
+def _diff_fields(schema_name: str, expected: dict, actual: dict) -> list[Change]:
     changes = []
     for field, spec in expected.items():
         if field not in actual:
@@ -49,7 +47,7 @@ def _diff_fields(schema_name: str, expected: dict, actual: dict) -> List[Change]
     return changes
 
 
-def diff(expected: dict, actual: dict) -> List[Change]:
+def diff(expected: dict, actual: dict) -> list[Change]:
     """Return the list of Changes turning expected into actual."""
     changes = _diff_routes(expected["routes"], actual["routes"])
 

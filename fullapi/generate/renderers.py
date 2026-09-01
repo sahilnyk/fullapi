@@ -52,7 +52,7 @@ def render(spec: Spec) -> dict[str, str]:
 def _requirements(spec: Spec) -> str:
     reqs = ["fastapi", "uvicorn", "pydantic", "pydantic-settings"]
     if spec.database != "none":
-        reqs.append("sqlalchemy")
+        reqs += ["sqlalchemy", "alembic"]
         if spec.database == "postgres":
             reqs.append("psycopg2-binary")
     if spec.auth:

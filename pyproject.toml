@@ -4,13 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fullapi"
-version = "2.1.1"
+version = "2.1.2"
 description = "Spec-driven FastAPI: generate a project from api.yaml, then enforce the spec in CI (openapi drift check)."
 readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"
 dependencies = [
     "PyYAML>=6.0",
+    "rich>=13.0",
 ]
 
 authors = [{name = "Sahil Nayak"}]

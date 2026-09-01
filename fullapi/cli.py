@@ -1,14 +1,21 @@
-"""CLI entry point — thin dispatch for `gen` and `check`."""
+"""CLI entry point — thin dispatch for init/gen/check/migrate."""
 
 import argparse
-import os
 import sys
 from pathlib import Path
+from typing import NoReturn
+
+from rich.console import Console
+from rich.markup import escape
+from rich.panel import Panel
+from rich.table import Table
+from rich.tree import Tree
 
 from fullapi import __version__
 from fullapi.spec import load_spec, SpecError
 from fullapi.generate import write
 from fullapi.check import run_check, CheckError
+from fullapi.migrate import run_migrate, MigrateError
 
 DEFAULT_SPEC = "api.yaml"
 DEFAULT_APP = "app.main:app"
@@ -27,28 +34,16 @@ resources:
     # auth: true    # uncomment to protect just this resource
 """
 
-
-def _use_color() -> bool:
-    if os.environ.get("NO_COLOR"):
-        return False
-    if os.environ.get("FORCE_COLOR"):
-        return True
-    return sys.stdout.isatty()
+# soft_wrap keeps short status lines from being hard-wrapped when stdout
+# isn't a real terminal, e.g. piped output, CI logs, the test suite.
+console = Console(soft_wrap=True)
+error_console = Console(stderr=True, soft_wrap=True)
 
 
-class _Style:
-    def __init__(self, enabled: bool):
-        self.enabled = enabled
-
-    def _wrap(self, code: str, text: str) -> str:
-        return f"\033[{code}m{text}\033[0m" if self.enabled else text
-
-    def dim(self, t: str) -> str:   return self._wrap("2", t)
-    def bold(self, t: str) -> str:  return self._wrap("1", t)
-    def green(self, t: str) -> str: return self._wrap("32", t)
-    def red(self, t: str) -> str:   return self._wrap("31", t)
-    def cyan(self, t: str) -> str:  return self._wrap("36", t)
-    def yellow(self, t: str) -> str: return self._wrap("33", t)
+def _fail(message: str) -> NoReturn:
+    """Print a red error line to stderr and exit with status 1."""
+    error_console.print(message)
+    sys.exit(1)
 
 
 def main() -> None:
@@ -57,7 +52,7 @@ def main() -> None:
         description="Spec-driven FastAPI — generate a project from api.yaml and enforce it in CI.",
     )
     parser.add_argument("--version", action="version", version=f"fullapi {__version__}")
-    sub = parser.add_subparsers(dest="command", metavar="{init,gen,check}", required=True)
+    sub = parser.add_subparsers(dest="command", metavar="{init,gen,check,migrate}", required=True)
 
     init = sub.add_parser("init", help="write a starter api.yaml")
     init.add_argument("spec", nargs="?", default=DEFAULT_SPEC,
@@ -76,60 +71,100 @@ def main() -> None:
     chk.add_argument("-v", "--verbose", action="store_true",
                      help="also list safe (non-breaking) changes")
 
+    mig = sub.add_parser("migrate", help="autogenerate an Alembic migration for the app")
+    mig.add_argument("-o", "--out", default=".", help="generated app directory (default: .)")
+    mig.add_argument("-m", "--message", default="auto migration",
+                     help="migration message (default: 'auto migration')")
+
     args = parser.parse_args()
-    style = _Style(_use_color())
-    {"init": _init, "gen": _gen, "check": _check}[args.command](args, style)
+    {"init": _init, "gen": _gen, "check": _check, "migrate": _migrate}[args.command](args)
 
 
-def _init(args, style: "_Style") -> None:
+def _init(args) -> None:
     path = Path(args.spec)
     if path.exists():
-        sys.exit(f"{style.red('error:')} {path} already exists")
+        _fail(f"[red]error:[/] {escape(str(path))} already exists")
+
     path.write_text(STARTER_SPEC)
-    print(f"{style.green('done')} — wrote {style.cyan(str(path))}")
+    console.print(Panel.fit(
+        f"[green]done[/] — wrote [cyan]{escape(str(path))}[/]\n"
+        f"[dim]next: fullapi gen {escape(str(path))}[/]",
+        border_style="green",
+    ))
 
 
-def _load(spec_path: str, style: "_Style"):
+def _load(spec_path: str):
     try:
         return load_spec(Path(spec_path))
     except SpecError as exc:
-        sys.exit(f"{style.red('spec error:')} {exc}")
+        _fail(f"[red]spec error:[/] {escape(str(exc))}")
 
 
-def _gen(args, style: "_Style") -> None:
-    spec = _load(args.spec, style)
+def _gen(args) -> None:
+    spec = _load(args.spec)
     written = write(spec, Path(args.out))
     root = Path(args.out).resolve()
+
+    # Group the flat list of written paths into a directory tree so the
+    # output reads like a real file listing, not a wall of paths.
+    tree = Tree(f"[cyan]{escape(str(root))}[/]")
+    dirs = {"": tree}
     for path in written:
         rel = path.resolve().relative_to(root)
-        print(f"  {style.dim('+')} {rel}")
-    total = style.bold(str(len(written)))
-    print(f"\n{style.green('done')} — {total} files written to {style.cyan(str(root))}")
+        parent_key = ""
+        for part in rel.parts[:-1]:
+            child_key = f"{parent_key}/{part}"
+            if child_key not in dirs:
+                dirs[child_key] = dirs[parent_key].add(f"[dim]{escape(part)}/[/]")
+            parent_key = child_key
+        dirs[parent_key].add(escape(rel.parts[-1]))
+
+    console.print(tree)
+    console.print(f"\n[green]done[/] — [bold]{len(written)}[/] files written to [cyan]{escape(str(root))}[/]")
 
 
-def _check(args, style: "_Style") -> None:
-    spec = _load(args.spec, style)
+def _check(args) -> None:
+    spec = _load(args.spec)
     try:
         result = run_check(spec, args.app)
     except CheckError as exc:
-        sys.exit(f"{style.red('check error:')} {exc}")
+        _fail(f"[red]check error:[/] {escape(str(exc))}")
 
     safe = [c for c in result.changes if c.severity == "safe"]
-    if args.verbose:
+    if args.verbose and safe:
+        table = Table(show_header=False, box=None, title="safe changes", title_justify="left")
         for change in safe:
-            print(f"  {style.yellow('~')} {style.dim(change.detail)}")
+            table.add_row("[yellow]~[/]", f"[dim]{escape(change.detail)}[/]")
+        console.print(table)
 
     if result.ok:
-        summary = f"{style.green('ok')} — app matches spec"
+        summary = "[green]ok[/] — app matches spec"
         if safe:
-            summary += style.dim(f" ({len(safe)} safe change(s))")
-        print(summary)
+            summary += f" [dim]({len(safe)} safe change(s))[/]"
+        console.print(summary)
         return
 
+    table = Table(title="breaking changes", header_style="bold red", title_justify="left")
+    table.add_column("kind")
+    table.add_column("detail")
     for change in result.breaking:
-        print(f"  {style.red('x')} {change.detail}")
-    count = style.bold(str(len(result.breaking)))
-    sys.exit(f"\n{style.red('fail')} — {count} breaking change(s)")
+        table.add_row(change.kind, escape(change.detail))
+    console.print(table)
+    _fail(f"[red]fail[/] — [bold]{len(result.breaking)}[/] breaking change(s)")
+
+
+def _migrate(args) -> None:
+    app_dir = Path(args.out)
+    try:
+        # run_migrate shells out to alembic; its output is real subprocess
+        # text (log lines like "[alembic.runtime.migration] ..."), not
+        # markup we control, so it's escaped before rich sees it.
+        output = run_migrate(app_dir, args.message)
+    except MigrateError as exc:
+        _fail(f"[red]migrate error:[/] {escape(str(exc))}")
+
+    console.print(Panel(escape(output.strip()), title="alembic", border_style="cyan"))
+    console.print("[green]done[/] — migration written")
 
 
 if __name__ == "__main__":

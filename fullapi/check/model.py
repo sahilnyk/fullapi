@@ -1,7 +1,6 @@
 """Data types shared across the check package."""
 
 from dataclasses import dataclass
-from typing import List
 
 
 class CheckError(Exception):
@@ -20,10 +19,10 @@ class Change:
 @dataclass(frozen=True)
 class CheckResult:
     """Outcome of a check run."""
-    changes: List[Change]
+    changes: list[Change]
 
     @property
-    def breaking(self) -> List[Change]:
+    def breaking(self) -> list[Change]:
         return [c for c in self.changes if c.severity == "breaking"]
 
     @property

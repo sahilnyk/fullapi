@@ -85,8 +85,9 @@ quietly.
 | Command | Description |
 |---------|-------------|
 | `fullapi init [spec]` | Write a starter api.yaml |
-| `fullapi gen [spec] [-o dir]` | Generate the project from the spec |
+| `fullapi gen [spec] [-o dir] [-v]` | Generate the project (`-v` lists every file) |
 | `fullapi check [spec] [--app app.main:app]` | Fail on breaking drift from the spec |
+| `fullapi migrate [-o dir] [-m message]` | Autogenerate an Alembic migration |
 
 ## How `check` works
 

@@ -1,7 +1,10 @@
 """CLI entry point — thin dispatch for init/gen/check/migrate."""
 
 import argparse
+import os
+import shlex
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 from typing import NoReturn
 
@@ -12,10 +15,10 @@ from rich.table import Table
 from rich.tree import Tree
 
 from fullapi import __version__
-from fullapi.spec import load_spec, SpecError
+from fullapi.check import CheckError, run_check
 from fullapi.generate import write
-from fullapi.check import run_check, CheckError
-from fullapi.migrate import run_migrate, MigrateError
+from fullapi.migrate import MigrateError, run_migrate
+from fullapi.spec import SpecError, load_spec
 
 DEFAULT_SPEC = "api.yaml"
 DEFAULT_APP = "app.main:app"
@@ -50,6 +53,14 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         prog="fullapi",
         description="Spec-driven FastAPI — generate a project from api.yaml and enforce it in CI.",
+        epilog=(
+            "examples:\n"
+            "  fullapi init\n"
+            "  fullapi gen\n"
+            "  fullapi check\n"
+            "\nRun 'fullapi COMMAND --help' for command-specific help."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--version", action="version", version=f"fullapi {__version__}")
     sub = parser.add_subparsers(dest="command", metavar="{init,gen,check,migrate}", required=True)
@@ -62,12 +73,16 @@ def main() -> None:
     gen.add_argument("spec", nargs="?", default=DEFAULT_SPEC,
                      help=f"spec file (default: {DEFAULT_SPEC})")
     gen.add_argument("-o", "--out", default=".", help="output directory (default: .)")
+    gen.add_argument("-v", "--verbose", action="store_true",
+                     help="list every generated file")
 
     chk = sub.add_parser("check", help="fail CI when the live app drifts from api.yaml")
     chk.add_argument("spec", nargs="?", default=DEFAULT_SPEC,
                      help=f"spec file (default: {DEFAULT_SPEC})")
     chk.add_argument("--app", default=DEFAULT_APP,
                      help=f"app import path (default: {DEFAULT_APP})")
+    chk.add_argument("--app-dir", default=".",
+                     help="directory containing the app package (default: .)")
     chk.add_argument("-v", "--verbose", action="store_true",
                      help="also list safe (non-breaking) changes")
 
@@ -75,6 +90,10 @@ def main() -> None:
     mig.add_argument("-o", "--out", default=".", help="generated app directory (default: .)")
     mig.add_argument("-m", "--message", default="auto migration",
                      help="migration message (default: 'auto migration')")
+
+    if len(sys.argv) == 1:
+        parser.print_help()
+        return
 
     args = parser.parse_args()
     {"init": _init, "gen": _gen, "check": _check, "migrate": _migrate}[args.command](args)
@@ -85,7 +104,11 @@ def _init(args) -> None:
     if path.exists():
         _fail(f"[red]error:[/] {escape(str(path))} already exists")
 
-    path.write_text(STARTER_SPEC)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(STARTER_SPEC, encoding="utf-8")
+    except OSError as exc:
+        _fail(f"[red]error:[/] could not write {escape(str(path))}: {escape(str(exc))}")
     console.print(Panel.fit(
         f"[green]done[/] — wrote [cyan]{escape(str(path))}[/]\n"
         f"[dim]next: fullapi gen {escape(str(path))}[/]",
@@ -105,28 +128,40 @@ def _gen(args) -> None:
     written = write(spec, Path(args.out))
     root = Path(args.out).resolve()
 
-    # Group the flat list of written paths into a directory tree so the
-    # output reads like a real file listing, not a wall of paths.
-    tree = Tree(f"[cyan]{escape(str(root))}[/]")
-    dirs = {"": tree}
-    for path in written:
-        rel = path.resolve().relative_to(root)
-        parent_key = ""
-        for part in rel.parts[:-1]:
-            child_key = f"{parent_key}/{part}"
-            if child_key not in dirs:
-                dirs[child_key] = dirs[parent_key].add(f"[dim]{escape(part)}/[/]")
-            parent_key = child_key
-        dirs[parent_key].add(escape(rel.parts[-1]))
+    if args.verbose:
+        # Group paths into a directory tree when the user asks for details.
+        tree = Tree(f"[cyan]{escape(str(root))}[/]")
+        dirs = {"": tree}
+        for path in written:
+            rel = path.resolve().relative_to(root)
+            parent_key = ""
+            for part in rel.parts[:-1]:
+                child_key = f"{parent_key}/{part}"
+                if child_key not in dirs:
+                    dirs[child_key] = dirs[parent_key].add(f"[dim]{escape(part)}/[/]")
+                parent_key = child_key
+            dirs[parent_key].add(escape(rel.parts[-1]))
+        console.print(tree)
 
-    console.print(tree)
-    console.print(f"\n[green]done[/] — [bold]{len(written)}[/] files written to [cyan]{escape(str(root))}[/]")
+    console.print(
+        f"[green]done[/] — [bold]{len(written)}[/] files written to "
+        f"[cyan]{escape(str(root))}[/]"
+    )
+    next_steps = []
+    if root != Path.cwd():
+        next_steps.append(f"cd {shlex.quote(str(root))}")
+    next_steps.extend([
+        "pip install -r requirements.txt",
+        "uvicorn app.main:app --reload",
+    ])
+    console.print("[dim]next:[/]\n  " + "\n  ".join(map(escape, next_steps)))
 
 
 def _check(args) -> None:
     spec = _load(args.spec)
     try:
-        result = run_check(spec, args.app)
+        with _working_directory(Path(args.app_dir)):
+            result = run_check(spec, args.app)
     except CheckError as exc:
         _fail(f"[red]check error:[/] {escape(str(exc))}")
 
@@ -151,6 +186,23 @@ def _check(args) -> None:
         table.add_row(change.kind, escape(change.detail))
     console.print(table)
     _fail(f"[red]fail[/] — [bold]{len(result.breaking)}[/] breaking change(s)")
+
+
+@contextmanager
+def _working_directory(path: Path):
+    try:
+        resolved = path.resolve(strict=True)
+    except OSError as exc:
+        _fail(f"[red]check error:[/] invalid app directory: {escape(str(exc))}")
+    if not resolved.is_dir():
+        _fail(f"[red]check error:[/] app directory is not a directory: {escape(str(path))}")
+
+    previous = Path.cwd()
+    os.chdir(resolved)
+    try:
+        yield
+    finally:
+        os.chdir(previous)
 
 
 def _migrate(args) -> None:

@@ -10,10 +10,10 @@ Both sides are reduced to the same normalized structure before diffing so the
 comparison logic (``diff``) stays independent of OpenAPI's exact shape.
 """
 
-from fullapi.check.model import Change, CheckResult, CheckError
-from fullapi.check.expected import expected_schema
 from fullapi.check.actual import actual_schema
 from fullapi.check.differ import diff
+from fullapi.check.expected import expected_schema
+from fullapi.check.model import Change, CheckError, CheckResult
 
 
 def run_check(spec, app_import_path: str) -> CheckResult:
@@ -24,11 +24,11 @@ def run_check(spec, app_import_path: str) -> CheckResult:
 
 
 __all__ = [
-    "expected_schema",
+    "Change",
+    "CheckError",
+    "CheckResult",
     "actual_schema",
     "diff",
+    "expected_schema",
     "run_check",
-    "Change",
-    "CheckResult",
-    "CheckError",
 ]

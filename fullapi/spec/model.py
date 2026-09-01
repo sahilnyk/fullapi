@@ -1,7 +1,6 @@
 """Typed spec model."""
 
 from dataclasses import dataclass
-from typing import List
 
 
 @dataclass(frozen=True)
@@ -16,7 +15,7 @@ class Field:
 class Resource:
     """One API resource -> model + schema + CRUD + REST router."""
     name: str            # singular, lowercase, e.g. "user"
-    fields: List[Field]
+    fields: list[Field]
     auth: bool = False   # protect this resource's routes
 
 
@@ -26,4 +25,4 @@ class Spec:
     name: str
     database: str            # none | sqlite | postgres
     auth: bool               # jwt auth scaffolding enabled
-    resources: List[Resource]
+    resources: list[Resource]
